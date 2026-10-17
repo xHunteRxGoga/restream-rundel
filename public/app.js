@@ -19,6 +19,10 @@ document.getElementById("check")?.addEventListener("click", async () => {
   await fetch("/api/test", { method: "POST" });
 });
 
+document.getElementById("clear-check")?.addEventListener("click", async () => {
+  await fetch("/api/test/clear", { method: "POST" });
+});
+
 document.getElementById("composer")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const input = document.getElementById("text");
@@ -50,10 +54,20 @@ function connect() {
       for (const [platform, status] of Object.entries(data.statuses || {})) setLamp(platform, status);
     }
     if (data.type === "message" || data.type === "message-update") upsert(data.message);
+    if (data.type === "clear") removeMessages(data.ids);
     if (data.type === "status") setLamp(data.platform, data);
   });
   ws.addEventListener("close", () => setTimeout(connect, 1500));
   return ws;
+}
+
+function removeMessages(ids) {
+  for (const id of ids || []) {
+    rows.get(id)?.remove();
+    rows.delete(id);
+  }
+  if (mode === "overlay") fadeOverlay();
+  if (mode === "dock" && !log.querySelector(".strip")) ensureEmpty();
 }
 
 function upsert(message) {

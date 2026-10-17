@@ -63,6 +63,15 @@ try {
   const renamed = await overlay.locator("#log").innerText();
   if (renamed.includes("keks")) throw new Error(`На экране остался старый ник:\n${renamed}`);
 
+  await dock.getByRole("button", { name: "Убрать проверку" }).click();
+  await dock.getByText("привет с твича").waitFor({ state: "detached" });
+  await overlay.getByText("кик тоже здесь").waitFor({ state: "detached" });
+  const afterClear = await dock.locator("#log").innerText();
+  if (afterClear.includes("Nightbot") || afterClear.includes("вк на связи")) {
+    throw new Error(`Тестовые сообщения остались:\n${afterClear}`);
+  }
+  if (!afterClear.includes("проверка связи")) throw new Error("Убралось и своё сообщение");
+
   const settings = await browser.newPage({ viewport: { width: 900, height: 900 } });
   await settings.goto(`http://127.0.0.1:${port}/settings`);
   await settings.getByRole("heading", { name: "Старт" }).waitFor();

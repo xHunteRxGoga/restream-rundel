@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { slug } from "./config.js";
 
@@ -12,20 +13,21 @@ export async function loginWithBrowser({ root, platform }) {
   }
 
   const profile = path.join(root, "data", "browser", platform);
+  const executablePath = findYandexBrowser();
+  if (!executablePath) {
+    throw new Error("Не нашёл Яндекс Браузер. Поставь его с https://browser.yandex.ru и нажми вход ещё раз.");
+  }
   let context;
   try {
     context = await chromium.launchPersistentContext(profile, {
-      channel: "msedge",
+      executablePath,
       headless: false,
       viewport: { width: 1100, height: 800 },
       locale: "ru-RU",
+      args: ["--no-first-run", "--no-default-browser-check"],
     });
-  } catch (error) {
-    const text = String(error?.message || "");
-    if (/channel|msedge|executable/i.test(text)) {
-      throw new Error("Не нашёл Microsoft Edge. Он нужен, чтобы открыть вход.");
-    }
-    throw new Error("Окно входа уже открыто или Edge занят. Закрой его и нажми ещё раз.");
+  } catch {
+    throw new Error("Яндекс Браузер не открылся. Закрой его окно входа, если оно уже висит, и нажми ещё раз.");
   }
 
   try {
@@ -164,4 +166,24 @@ async function waitFor(context, read) {
 
 function plainCookie(cookie) {
   return { name: cookie.name, value: cookie.value, domain: cookie.domain };
+}
+
+function findYandexBrowser() {
+  const local = process.env.LOCALAPPDATA || "";
+  const roots = [
+    path.join(local, "Yandex", "YandexBrowser", "Application", "browser.exe"),
+    path.join(process.env.ProgramFiles || "C:\\Program Files", "Yandex", "YandexBrowser", "Application", "browser.exe"),
+    path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Yandex", "YandexBrowser", "Application", "browser.exe"),
+  ];
+  for (const candidate of roots) {
+    if (fs.existsSync(candidate)) return candidate;
+    const folder = path.dirname(candidate);
+    if (!fs.existsSync(folder)) continue;
+    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const nested = path.join(folder, entry.name, "browser.exe");
+      if (fs.existsSync(nested)) return nested;
+    }
+  }
+  return "";
 }

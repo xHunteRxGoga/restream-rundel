@@ -87,6 +87,10 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
       hub.setAliases(store.get().aliases || {});
       return sendJson(response, 200, { ok: true, display });
     }
+    if (request.method === "POST" && url.pathname === "/api/test/clear") {
+      hub.clearSamples();
+      return sendJson(response, 200, { ok: true });
+    }
     if (request.method === "POST" && url.pathname === "/api/test") {
       injectSamples(hub);
       return sendJson(response, 200, { ok: true });

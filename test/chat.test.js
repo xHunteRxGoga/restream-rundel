@@ -166,6 +166,14 @@ test("youtube page gives the chat continuation and a stable login hash", () => {
   assert.equal(batch.continuation, "next");
 });
 
+test("clearing the check removes only the fake messages", () => {
+  const hub = createHub();
+  hub.ingest({ platform: "twitch", platformMessageId: "sample-1", author: "keks", text: "тест" });
+  hub.ingest({ platform: "kick", platformMessageId: "real-1", author: "лера", text: "живой" });
+  hub.clearSamples();
+  assert.deepEqual(hub.history().map((item) => item.text), ["живой"]);
+});
+
 test("an empty secret does not wipe a saved token", () => {
   const saved = defaultConfig();
   saved.twitch.oauthToken = "secret-token";

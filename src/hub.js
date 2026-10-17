@@ -70,6 +70,7 @@ export function createHub() {
       at: input.at || Date.now(),
       isBot: Boolean(input.isBot),
       own: Boolean(input.own),
+      sample: Boolean(input.sample) || String(input.platformMessageId || "").startsWith("sample-"),
       deliveries: input.deliveries || null,
     };
     message.overlay = !hiddenOnOverlay(message, bots);
@@ -168,6 +169,16 @@ export function createHub() {
       syncOwnOverlay(message);
       update(message);
       return message;
+    },
+    clearSamples() {
+      const ids = [];
+      for (let index = messages.length - 1; index >= 0; index -= 1) {
+        if (!messages[index].sample) continue;
+        ids.push(messages[index].id);
+        messages.splice(index, 1);
+      }
+      if (ids.length) emit({ type: "clear", ids });
+      return ids;
     },
   };
 }

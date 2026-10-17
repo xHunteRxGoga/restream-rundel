@@ -1,8 +1,5 @@
-import { spawn } from "node:child_process";
-import fs from "node:fs";
-import path from "node:path";
 import { slug } from "./config.js";
-import { readVkAuthFromProfile, readYandexCookies } from "./yandex-profile.js";
+import { grabSession } from "./yandex-cdp.js";
 
 const PAGES = {
   twitch: "https://www.twitch.tv/",
@@ -12,28 +9,22 @@ const PAGES = {
 };
 
 export function openLoginTab(platform) {
-  const executablePath = findYandexBrowser();
-  if (!executablePath) {
-    throw new Error("Не нашёл Яндекс Браузер. Поставь его с https://browser.yandex.ru и нажми вход ещё раз.");
-  }
-  const url = PAGES[platform];
-  if (!url) throw new Error("Неизвестная площадка");
-  const child = spawn(executablePath, [url], { detached: true, stdio: "ignore" });
-  child.unref();
-  console.log(`Открыл вкладку ${platform} в Яндекс Браузере`);
-  return url;
+  return PAGES[platform] || "";
 }
 
 export async function finishLogin(platform) {
-  if (platform === "twitch") return finishTwitch();
-  if (platform === "youtube") return finishYouTube();
-  if (platform === "kick") return finishKick();
-  if (platform === "vk") return finishVk();
+  const pageUrl = PAGES[platform];
+  if (!pageUrl) throw new Error("Неизвестная площадка");
+  const session = await grabSession(platform, pageUrl);
+  if (platform === "twitch") return finishTwitch(session.cookies);
+  if (platform === "youtube") return finishYouTube(session.cookies);
+  if (platform === "kick") return finishKick(session.cookies);
+  if (platform === "vk") return finishVk(session);
   throw new Error("Неизвестная площадка");
 }
 
-async function finishTwitch() {
-  const token = cookieValue(readYandexCookies(["twitch.tv"]), "auth-token");
+async function finishTwitch(cookies) {
+  const token = cookieValue(cookies, "auth-token");
   if (!token) {
     throw new Error("Во вкладке Twitch не видно входа. Открой нужный аккаунт и нажми «Это я» ещё раз.");
   }
@@ -53,8 +44,7 @@ async function finishTwitch() {
   };
 }
 
-async function finishYouTube() {
-  const cookies = readYandexCookies(["youtube.com", "google.com"]);
+async function finishYouTube(cookies) {
   if (!cookies.some((cookie) => cookie.name === "SAPISID" || cookie.name === "__Secure-3PAPISID")) {
     throw new Error("Во вкладке YouTube не видно входа. Открой нужный аккаунт и нажми «Это я» ещё раз.");
   }
@@ -69,8 +59,7 @@ async function finishYouTube() {
   };
 }
 
-async function finishKick() {
-  const cookies = readYandexCookies(["kick.com"]);
+async function finishKick(cookies) {
   if (!cookies.length) {
     throw new Error("Во вкладке Kick не видно входа. Открой нужный аккаунт и нажми «Это я» ещё раз.");
   }
@@ -97,8 +86,10 @@ async function finishKick() {
   };
 }
 
-async function finishVk() {
-  const auth = readVkAuthFromProfile();
+async function finishVk(session) {
+  let auth = session.vkAuth;
+  if (auth?.auth) auth = auth.auth;
+  if (auth?.access_token && !auth.accessToken) auth = { ...auth, accessToken: auth.access_token };
   if (!auth?.accessToken) {
     throw new Error("Во вкладке VK не видно входа. Открой свой канал на live.vkvideo.ru и нажми «Это я» ещё раз.");
   }
@@ -150,24 +141,4 @@ function plainCookie(cookie) {
 
 function agent() {
   return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
-}
-
-function findYandexBrowser() {
-  const local = process.env.LOCALAPPDATA || "";
-  const roots = [
-    path.join(local, "Yandex", "YandexBrowser", "Application", "browser.exe"),
-    path.join(process.env.ProgramFiles || "C:\\Program Files", "Yandex", "YandexBrowser", "Application", "browser.exe"),
-    path.join(process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)", "Yandex", "YandexBrowser", "Application", "browser.exe"),
-  ];
-  for (const candidate of roots) {
-    if (fs.existsSync(candidate)) return candidate;
-    const folder = path.dirname(candidate);
-    if (!fs.existsSync(folder)) continue;
-    for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const nested = path.join(folder, entry.name, "browser.exe");
-      if (fs.existsSync(nested)) return nested;
-    }
-  }
-  return "";
 }

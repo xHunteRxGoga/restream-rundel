@@ -23,21 +23,17 @@ for (const button of document.querySelectorAll("[data-clear]")) {
 
 async function login(platform) {
   const button = document.getElementById(`login-${platform}`);
-  const confirming = button.dataset.step === "confirm";
+  const previous = button.textContent;
   button.disabled = true;
+  button.textContent = "Открываю Яндекс...";
+  banner("Яндекс на секунду закроется и откроется снова с твоими аккаунтами. Чат заберёт вход сам.");
   try {
-    const response = await fetch(confirming ? `/api/login/${platform}/finish` : `/api/login/${platform}`, { method: "POST" });
+    const response = await fetch(`/api/login/${platform}`, { method: "POST" });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       banner(body.error || "Вход не удался.");
       button.disabled = false;
-      return;
-    }
-    if (!confirming) {
-      button.dataset.step = "confirm";
-      button.disabled = false;
-      button.textContent = "Это я";
-      banner("Во вкладке Яндекса проверь, что открыт твой аккаунт, и нажми «Это я».");
+      button.textContent = previous;
       return;
     }
     location.reload();

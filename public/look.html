@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Вид чата</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body class="look">
+  <header class="top">
+    <div>
+      <h1>Вид чата</h1>
+      <p class="lede">Крутишь ползунок, в OBS уже другой чат. Это только то, что видят зрители.</p>
+    </div>
+    <a class="text-link" href="/dock">К чату</a>
+  </header>
+  <div class="look-grid">
+    <form id="look-form">
+      <label>Размер текста <output id="out-fontSize">18</output>
+        <input id="fontSize" name="fontSize" type="range" min="12" max="48" value="18">
+      </label>
+      <label>Размер ника <output id="out-nameSize">14</output>
+        <input id="nameSize" name="nameSize" type="range" min="10" max="32" value="14">
+      </label>
+      <label>Плотность подложки <output id="out-opacity">62</output>
+        <input id="opacity" name="opacity" type="range" min="0" max="100" value="62">
+      </label>
+      <label>Сколько строк <output id="out-maxMessages">8</output>
+        <input id="maxMessages" name="maxMessages" type="range" min="1" max="20" value="8">
+      </label>
+      <label class="check"><input id="align" name="align" type="checkbox"> Сверху, а не снизу</label>
+      <label class="check"><input id="showPlatform" name="showPlatform" type="checkbox" checked> Буквы площадки</label>
+      <label class="check"><input id="showTime" name="showTime" type="checkbox" checked> Время</label>
+      <label class="check"><input id="fade" name="fade" type="checkbox" checked> Старые строки тише</label>
+      <div class="actions">
+        <button class="ghost" id="reset" type="button">Как было</button>
+      </div>
+    </form>
+    <div class="stage">
+      <iframe src="/overlay?preview=1" title="Как это видят зрители"></iframe>
+    </div>
+  </div>
+  <script type="module" src="/look.js"></script>
+</body>
+</html>

@@ -72,6 +72,16 @@ try {
   }
   if (!afterClear.includes("проверка связи")) throw new Error("Убралось и своё сообщение");
 
+  const editor = await browser.newPage({ viewport: { width: 1100, height: 760 } });
+  await editor.goto(`http://127.0.0.1:${port}/look`);
+  const frame = editor.frameLocator("iframe");
+  await frame.getByText("привет с твича").waitFor();
+  await editor.locator("#fontSize").fill("32");
+  await editor.waitForFunction(() => {
+    const text = document.querySelector("iframe")?.contentDocument?.querySelector(".text");
+    return text && getComputedStyle(text).fontSize === "32px";
+  });
+
   const settings = await browser.newPage({ viewport: { width: 900, height: 900 } });
   await settings.goto(`http://127.0.0.1:${port}/settings`);
   await settings.getByRole("heading", { name: "Старт" }).waitFor();

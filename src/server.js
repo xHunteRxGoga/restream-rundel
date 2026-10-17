@@ -4,7 +4,7 @@ import path from "node:path";
 import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
 import { PLATFORMS } from "./platforms.js";
-import { slug } from "./config.js";
+import { slug, sanitizeLook } from "./config.js";
 import { personKey } from "./hub.js";
 import { bridgePage, exchangeCode, implicitPatch, redirectUri, startUrl } from "./oauth.js";
 import { loginWithBrowser } from "./browser-login.js";
@@ -16,6 +16,8 @@ const FILES = {
   "/dock": ["dock.html", "text/html; charset=utf-8"],
   "/overlay": ["overlay.html", "text/html; charset=utf-8"],
   "/settings": ["settings.html", "text/html; charset=utf-8"],
+  "/look": ["look.html", "text/html; charset=utf-8"],
+  "/look.js": ["look.js", "text/javascript; charset=utf-8"],
 };
 
 export function createApp({ root, store, hub, statuses, connectors, bindPublish }) {
@@ -43,7 +45,7 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
 
   const wss = new WebSocketServer({ server, path: "/ws" });
   wss.on("connection", (socket) => {
-    socket.send(JSON.stringify({ type: "snapshot", messages: hub.history(), statuses, redirects: redirectMap() }));
+    socket.send(JSON.stringify(publicState("snapshot")));
   });
 
   return server;
@@ -55,10 +57,16 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
     }
     if (request.method === "GET" && FILES[url.pathname]) return sendFile(response, url.pathname);
     if (request.method === "GET" && url.pathname === "/api/state") {
-      return sendJson(response, 200, { messages: hub.history(), statuses, redirects: redirectMap() });
+      return sendJson(response, 200, publicState("state"));
     }
     if (request.method === "GET" && url.pathname === "/api/config") {
       return sendJson(response, 200, store.get());
+    }
+    if (request.method === "POST" && url.pathname === "/api/look") {
+      const look = sanitizeLook(await readJson(request));
+      store.save({ look });
+      publish({ type: "look", look });
+      return sendJson(response, 200, { ok: true, look });
     }
     if (request.method === "POST" && url.pathname === "/api/config") {
       const patch = normalizePatch(await readJson(request));
@@ -149,6 +157,16 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
     const file = path.join(publicDir, name);
     response.writeHead(200, { "Content-Type": type, "Cache-Control": "no-store" });
     fs.createReadStream(file).pipe(response);
+  }
+
+  function publicState(type) {
+    return {
+      type,
+      messages: hub.history(),
+      statuses,
+      redirects: redirectMap(),
+      look: store.get().look,
+    };
   }
 }
 

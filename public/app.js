@@ -7,9 +7,10 @@ const META = {
 };
 
 const mode = document.body.dataset.mode;
+const preview = new URLSearchParams(location.search).has("preview");
 const log = document.getElementById("log");
 const rows = new Map();
-const overlayLimit = 8;
+let overlayLimit = 8;
 
 if (mode === "dock") buildLamps();
 
@@ -52,7 +53,10 @@ function connect() {
       if (mode === "dock") ensureEmpty();
       for (const message of data.messages) upsert(message);
       for (const [platform, status] of Object.entries(data.statuses || {})) setLamp(platform, status);
+      if (preview) paintPreview();
+      applyLook(data.look);
     }
+    if (data.type === "look") applyLook(data.look);
     if (data.type === "message" || data.type === "message-update") upsert(data.message);
     if (data.type === "clear") removeMessages(data.ids);
     if (data.type === "status") setLamp(data.platform, data);
@@ -163,9 +167,50 @@ function trimOverlay() {
 
 function fadeOverlay() {
   const visible = [...log.querySelectorAll(".strip")];
+  const fade = document.body.dataset.fade !== "false";
   visible.forEach((row, index) => {
+    if (!fade) {
+      row.style.opacity = "";
+      return;
+    }
     const fromEnd = visible.length - 1 - index;
     row.style.opacity = String(Math.max(0.38, 1 - fromEnd * 0.1));
+  });
+}
+
+function applyLook(look) {
+  if (!look || mode !== "overlay") return;
+  overlayLimit = look.maxMessages || 8;
+  const root = document.documentElement;
+  root.style.setProperty("--msg-size", `${look.fontSize}px`);
+  root.style.setProperty("--name-size", `${look.nameSize}px`);
+  root.style.setProperty("--strip-alpha", String(Number(look.opacity) / 100));
+  document.body.dataset.align = look.align === "top" ? "top" : "bottom";
+  document.body.dataset.showPlatform = look.showPlatform === false ? "false" : "true";
+  document.body.dataset.showTime = look.showTime === false ? "false" : "true";
+  document.body.dataset.fade = look.fade === false ? "false" : "true";
+  trimOverlay();
+}
+
+function paintPreview() {
+  const now = Date.now();
+  const examples = [
+    ["twitch", "keks", "привет с твича"],
+    ["youtube", "Маша", "а на ютубе слышно?"],
+    ["kick", "rain", "кик тоже здесь"],
+    ["vk", "вова", "вк на связи"],
+  ];
+  examples.forEach(([platform, author, text], index) => {
+    upsert({
+      id: `preview-${index}`,
+      platform,
+      author,
+      displayAuthor: author,
+      text,
+      safeHtml: text,
+      overlay: true,
+      at: now,
+    });
   });
 }
 

@@ -2,6 +2,39 @@ import fs from "node:fs";
 import path from "node:path";
 import { DEFAULT_BOTS } from "./filter.js";
 
+export function defaultLook() {
+  return {
+    fontSize: 18,
+    nameSize: 14,
+    opacity: 62,
+    maxMessages: 8,
+    align: "bottom",
+    showPlatform: true,
+    showTime: true,
+    fade: true,
+  };
+}
+
+export function sanitizeLook(input) {
+  const base = defaultLook();
+  const source = input || {};
+  const clamp = (key, min, max) => {
+    const value = Number(source[key]);
+    if (!Number.isFinite(value)) return base[key];
+    return Math.min(max, Math.max(min, Math.round(value)));
+  };
+  return {
+    fontSize: clamp("fontSize", 12, 48),
+    nameSize: clamp("nameSize", 10, 32),
+    opacity: clamp("opacity", 0, 100),
+    maxMessages: clamp("maxMessages", 1, 20),
+    align: source.align === "top" ? "top" : "bottom",
+    showPlatform: source.showPlatform !== false,
+    showTime: source.showTime !== false,
+    fade: source.fade !== false,
+  };
+}
+
 export function defaultConfig() {
   return {
     twitch: { channel: "", login: "", userId: "", oauthToken: "", clientId: "" },
@@ -38,6 +71,7 @@ export function defaultConfig() {
     },
     bots: [...DEFAULT_BOTS],
     aliases: {},
+    look: defaultLook(),
   };
 }
 
@@ -106,6 +140,7 @@ export function mergeConfig(base, patch, clear = []) {
       else next.aliases[key] = display;
     }
   }
+  if (patch?.look) next.look = sanitizeLook({ ...next.look, ...patch.look });
   for (const pathKey of clear) {
     const [section, field] = String(pathKey).split(".");
     if (next[section] && field in next[section]) next[section][field] = defaultConfig()[section][field];

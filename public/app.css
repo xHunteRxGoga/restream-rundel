@@ -268,15 +268,19 @@ body.overlay .log {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 6px;
+  gap: var(--strip-gap, 6px);
 }
+body.overlay[data-align="top"] .log { justify-content: flex-start; }
 body.overlay .strip {
-  background: rgba(10, 12, 16, 0.62);
+  background: rgba(10, 12, 16, var(--strip-alpha, 0.62));
   margin: 0;
 }
 body.overlay .strip.in { animation: arrive 180ms ease-out; }
-body.overlay .text { font-size: 18px; }
-body.overlay .author { font-size: 14px; }
+body.overlay .text { font-size: var(--msg-size, 18px); }
+body.overlay .author { font-size: var(--name-size, 14px); }
+body.overlay .plat { font-size: calc(var(--name-size, 14px) - 2px); }
+body.overlay[data-show-platform="false"] .plat { display: none; }
+body.overlay[data-show-time="false"] time { display: none; }
 
 @keyframes arrive {
   from { opacity: 0; transform: translateX(-10px); }
@@ -362,6 +366,37 @@ code {
   border-top: 1px solid var(--line);
 }
 .obs-card p { margin: 6px 0; }
+
+body.look { max-width: 980px; margin: 0 auto; padding: 28px 20px 48px; }
+.look-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 22px;
+  align-items: start;
+}
+.stage {
+  min-height: 480px;
+  background:
+    radial-gradient(circle at 18% 24%, #3d6f9a 0, transparent 42%),
+    radial-gradient(circle at 78% 72%, #b85a28 0, transparent 40%),
+    #17202b;
+}
+.stage iframe {
+  width: 100%;
+  height: 480px;
+  border: 0;
+  background: transparent;
+}
+label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+label.check input { width: auto; }
+@media (max-width: 760px) {
+  .look-grid { grid-template-columns: 1fr; }
+}
 .who { margin: 6px 0 0; color: var(--muted); }
 button.enter {
   min-height: 48px;

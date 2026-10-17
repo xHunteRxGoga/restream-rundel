@@ -7,7 +7,7 @@ import { renderSafeHtml } from "../src/render.js";
 import { parseTwitchLine } from "../src/connectors/twitch.js";
 import { parseKickContent } from "../src/connectors/kick.js";
 import { vkTextFromBlocks } from "../src/connectors/vk.js";
-import { mergeConfig, defaultConfig } from "../src/config.js";
+import { mergeConfig, defaultConfig, sanitizeLook } from "../src/config.js";
 
 test("commands and known bots stay off the overlay", () => {
   assert.equal(hiddenOnOverlay({ text: "!song", author: "лера" }), true);
@@ -172,6 +172,16 @@ test("clearing the check removes only the fake messages", () => {
   hub.ingest({ platform: "kick", platformMessageId: "real-1", author: "лера", text: "живой" });
   hub.clearSamples();
   assert.deepEqual(hub.history().map((item) => item.text), ["живой"]);
+});
+
+test("chat look stays inside readable bounds", () => {
+  const look = sanitizeLook({ fontSize: 999, opacity: -4, maxMessages: 0, align: "top", showTime: false });
+  assert.equal(look.fontSize, 48);
+  assert.equal(look.opacity, 0);
+  assert.equal(look.maxMessages, 1);
+  assert.equal(look.align, "top");
+  assert.equal(look.showTime, false);
+  assert.equal(look.showPlatform, true);
 });
 
 test("an empty secret does not wipe a saved token", () => {

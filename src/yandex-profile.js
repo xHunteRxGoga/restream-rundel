@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 
 export function decryptCookieValue(encrypted, key) {
@@ -151,19 +152,14 @@ function readCookieRows(dbPath) {
 }
 
 function copyShared(source, dest) {
-  const script = `
-$in = [System.IO.File]::Open($env:RUNDEL_SRC, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
-try {
-  $out = [System.IO.File]::Create($env:RUNDEL_DST)
-  try { $in.CopyTo($out) } finally { $out.Close() }
-} finally { $in.Close() }
-`;
+  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), "locked-copy.ps1");
   try {
-    execFileSync("powershell", ["-NoProfile", "-Command", script], {
-      env: { ...process.env, RUNDEL_SRC: source, RUNDEL_DST: dest },
-      windowsHide: true,
-    });
+    execFileSync(
+      "powershell",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script, source, dest],
+      { stdio: "pipe", windowsHide: true },
+    );
   } catch {
-    throw new Error("Не смог прочитать вход в Яндексе. Не закрывай браузер и нажми «Это я» ещё раз.");
+    throw new Error("Яндекс не отдал вход, пока браузер открыт. Закрой Яндекс полностью, включая значок у часов, и нажми «Это я» ещё раз.");
   }
 }

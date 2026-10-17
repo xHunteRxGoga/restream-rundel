@@ -6,7 +6,7 @@ import { readVkAuthFromProfile, readYandexCookies } from "./yandex-profile.js";
 
 const PAGES = {
   twitch: "https://www.twitch.tv/",
-  youtube: "https://studio.youtube.com/",
+  youtube: "https://www.youtube.com/",
   kick: "https://kick.com/",
   vk: "https://live.vkvideo.ru/",
 };
@@ -59,7 +59,7 @@ async function finishYouTube() {
     throw new Error("Во вкладке YouTube не видно входа. Открой нужный аккаунт и нажми «Это я» ещё раз.");
   }
   const channelId = await youtubeChannelId(cookies);
-  if (!channelId) throw new Error("YouTube не показал канал. Открой свою студию во вкладке и нажми «Это я» ещё раз.");
+  if (!channelId) throw new Error("YouTube не показал канал. На вкладке должен быть открыт твой аккаунт, потом снова «Это я».");
   return {
     youtube: {
       channelId,
@@ -125,12 +125,15 @@ async function finishVk() {
 
 async function youtubeChannelId(cookies) {
   const headers = { cookie: cookieHeader(cookies), "user-agent": agent(), accept: "text/html" };
-  const response = await fetch("https://studio.youtube.com/", { headers, redirect: "follow" });
-  const html = await response.text();
-  return response.url.match(/channel\/(UC[\w-]+)/)?.[1]
-    || html.match(/"channelId":"(UC[\w-]+)"/)?.[1]
-    || html.match(/"externalId":"(UC[\w-]+)"/)?.[1]
-    || "";
+  for (const url of ["https://www.youtube.com/", "https://studio.youtube.com/"]) {
+    const response = await fetch(url, { headers, redirect: "follow" });
+    const html = await response.text();
+    const channelId = response.url.match(/channel\/(UC[\w-]+)/)?.[1]
+      || html.match(/"externalId":"(UC[\w-]+)"/)?.[1]
+      || html.match(/"channelId":"(UC[\w-]+)"/)?.[1];
+    if (channelId) return channelId;
+  }
+  return "";
 }
 
 function cookieValue(cookies, name) {

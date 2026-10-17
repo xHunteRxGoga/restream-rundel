@@ -116,12 +116,35 @@ function cookieDatabase(userData, profile) {
 }
 
 function queryCookies(dbPath) {
-  const copy = path.join(os.tmpdir(), `rundel-cookies-${process.pid}-${Date.now()}.sqlite`);
-  fs.copyFileSync(dbPath, copy);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rundel-"));
+  const copy = path.join(dir, "Cookies");
+  copyShared(dbPath, copy);
+  for (const suffix of ["-wal", "-shm"]) {
+    const side = `${dbPath}${suffix}`;
+    if (fs.existsSync(side)) copyShared(side, `${copy}${suffix}`);
+  }
   try {
     const db = new DatabaseSync(copy, { readOnly: true });
     return db.prepare("SELECT host_key, name, value, encrypted_value FROM cookies").all();
   } finally {
-    fs.rmSync(copy, { force: true });
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function copyShared(source, dest) {
+  const script = `
+$in = [System.IO.File]::Open($env:RUNDEL_SRC, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+try {
+  $out = [System.IO.File]::Create($env:RUNDEL_DST)
+  try { $in.CopyTo($out) } finally { $out.Close() }
+} finally { $in.Close() }
+`;
+  try {
+    execFileSync("powershell", ["-NoProfile", "-Command", script], {
+      env: { ...process.env, RUNDEL_SRC: source, RUNDEL_DST: dest },
+      windowsHide: true,
+    });
+  } catch {
+    throw new Error("Не смог прочитать вход в Яндексе. Не закрывай браузер и нажми «Это я» ещё раз.");
   }
 }

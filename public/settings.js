@@ -23,24 +23,27 @@ for (const button of document.querySelectorAll("[data-clear]")) {
 
 async function login(platform) {
   const button = document.getElementById(`login-${platform}`);
-  const previous = button.textContent;
+  const confirming = button.dataset.step === "confirm";
   button.disabled = true;
-  button.textContent = "Смотри окно браузера";
-  banner("Открыл вход. Залогинься в окне и не закрывай его, пока сюда не вернётся ответ.");
   try {
-    const response = await fetch(`/api/login/${platform}`, { method: "POST" });
+    const response = await fetch(confirming ? `/api/login/${platform}/finish` : `/api/login/${platform}`, { method: "POST" });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
       banner(body.error || "Вход не удался.");
       button.disabled = false;
-      button.textContent = previous;
+      return;
+    }
+    if (!confirming) {
+      button.dataset.step = "confirm";
+      button.disabled = false;
+      button.textContent = "Это я";
+      banner("Во вкладке Яндекса проверь, что открыт твой аккаунт, и нажми «Это я».");
       return;
     }
     location.reload();
   } catch {
     banner("Чат не ответил. Проверь, что чёрное окно start.bat ещё открыто.");
     button.disabled = false;
-    button.textContent = previous;
   }
 }
 

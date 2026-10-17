@@ -7,7 +7,9 @@ import { renderSafeHtml } from "../src/render.js";
 import { parseTwitchLine } from "../src/connectors/twitch.js";
 import { parseKickContent } from "../src/connectors/kick.js";
 import { vkTextFromBlocks } from "../src/connectors/vk.js";
+import crypto from "node:crypto";
 import { mergeConfig, defaultConfig, sanitizeLook } from "../src/config.js";
+import { decryptCookieValue, extractVkAuth } from "../src/yandex-profile.js";
 
 test("commands and known bots stay off the overlay", () => {
   assert.equal(hiddenOnOverlay({ text: "!song", author: "лера" }), true);
@@ -182,6 +184,18 @@ test("chat look stays inside readable bounds", () => {
   assert.equal(look.align, "top");
   assert.equal(look.showTime, false);
   assert.equal(look.showPlatform, true);
+});
+
+test("yandex cookie and vk token can be read back", () => {
+  const key = crypto.randomBytes(32);
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const data = Buffer.concat([cipher.update("auth-token-value"), cipher.final()]);
+  const packed = Buffer.concat([Buffer.from("v10"), iv, data, cipher.getAuthTag()]);
+  assert.equal(decryptCookieValue(packed, key), "auth-token-value");
+  const found = extractVkAuth(Buffer.from('{"accessToken":"abc","refreshToken":"def","clientId":"g"}', "utf8"));
+  assert.equal(found.accessToken, "abc");
+  assert.equal(found.refreshToken, "def");
 });
 
 test("an empty secret does not wipe a saved token", () => {

@@ -7,7 +7,7 @@ import { PLATFORMS } from "./platforms.js";
 import { slug, sanitizeLook } from "./config.js";
 import { personKey } from "./hub.js";
 import { bridgePage, exchangeCode, implicitPatch, redirectUri, startUrl } from "./oauth.js";
-import { loginWithBrowser } from "./browser-login.js";
+import { finishLogin, openLoginTab } from "./browser-login.js";
 
 const FILES = {
   "/app.css": ["app.css", "text/css; charset=utf-8"],
@@ -22,7 +22,6 @@ const FILES = {
 
 export function createApp({ root, store, hub, statuses, connectors, bindPublish }) {
   const publicDir = path.join(root, "public");
-  let loginBusy = false;
 
   function publish(event) {
     const data = JSON.stringify(event);
@@ -116,19 +115,21 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
       injectSamples(hub);
       return sendJson(response, 200, { ok: true });
     }
-    if (request.method === "POST" && /^\/api\/login\/(twitch|youtube|kick|vk)$/.test(url.pathname)) {
-      if (loginBusy) return sendJson(response, 409, { error: "Окно входа уже открыто." });
-      loginBusy = true;
+    if (request.method === "POST" && /^\/api\/login\/(twitch|youtube|kick|vk)(\/finish)?$/.test(url.pathname)) {
+      const parts = url.pathname.split("/");
+      const platform = parts[3];
+      const finish = parts[4] === "finish";
       try {
-        const platform = url.pathname.split("/").pop();
-        const patch = await loginWithBrowser({ root, platform });
+        if (!finish) {
+          openLoginTab(platform);
+          return sendJson(response, 200, { ok: true, opened: true });
+        }
+        const patch = await finishLogin(platform);
         store.save(patch);
         connectors.reload();
         return sendJson(response, 200, { ok: true, name: signedInName(patch) });
       } catch (error) {
         return sendJson(response, 400, { error: error.message || "Вход не удался." });
-      } finally {
-        loginBusy = false;
       }
     }
     if (request.method === "POST" && url.pathname === "/api/oauth/store") {

@@ -116,18 +116,37 @@ function cookieDatabase(userData, profile) {
 }
 
 function queryCookies(dbPath) {
+  try {
+    return readCookieRows(dbPath);
+  } catch {
+    // Яндекс держит файл открытым. Читаем через общую копию.
+  }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rundel-"));
   const copy = path.join(dir, "Cookies");
   copyShared(dbPath, copy);
   for (const suffix of ["-wal", "-shm"]) {
     const side = `${dbPath}${suffix}`;
-    if (fs.existsSync(side)) copyShared(side, `${copy}${suffix}`);
+    if (fs.existsSync(side)) {
+      try {
+        copyShared(side, `${copy}${suffix}`);
+      } catch {
+        // журнал не обязателен
+      }
+    }
   }
   try {
-    const db = new DatabaseSync(copy, { readOnly: true });
-    return db.prepare("SELECT host_key, name, value, encrypted_value FROM cookies").all();
+    return readCookieRows(copy);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function readCookieRows(dbPath) {
+  const db = new DatabaseSync(dbPath, { readOnly: true });
+  try {
+    return db.prepare("SELECT host_key, name, value, encrypted_value FROM cookies").all();
+  } finally {
+    db.close();
   }
 }
 

@@ -49,7 +49,7 @@ export function createVkConnector({ hub, learn, getConfig, setStatus }) {
       stopSocket();
       const channel = getConfig().vk.channel;
       if (!channel) {
-        setStatus("vk", "off", "нужно имя канала");
+        setStatus("vk", "off", "Войди через VK");
         return;
       }
       setStatus("vk", "connecting", "подключаюсь");

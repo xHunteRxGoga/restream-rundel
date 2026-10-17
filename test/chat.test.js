@@ -1,5 +1,6 @@
-import assert from "node:assert/strict";
 import test from "node:test";
+import assert from "node:assert/strict";
+import { parseYouTubeLivePage, readYouTubeActions, sapisidAuthorization } from "../src/connectors/youtube-web.js";
 import { hiddenOnOverlay } from "../src/filter.js";
 import { createHub } from "../src/hub.js";
 import { renderSafeHtml } from "../src/render.js";
@@ -129,6 +130,40 @@ test("an alias renames a person on screen and still hides the original bot nick"
   hub.setAliases({ "twitch:id:5": "Кекс" });
   assert.equal(hub.history().find((item) => item.id === viewer.id).displayAuthor, "Кекс");
   assert.equal(hub.history().find((item) => item.id === bot.id).displayAuthor, "Nightbot");
+});
+
+test("youtube page gives the chat continuation and a stable login hash", () => {
+  const page = parseYouTubeLivePage(
+    '{"INNERTUBE_API_KEY":"key","INNERTUBE_CLIENT_VERSION":"2.1","reloadContinuationData":{"continuation":"abc"},"sendLiveChatMessageEndpoint":{"params":"prm"}}',
+    "https://www.youtube.com/watch?v=abcdefghijk",
+  );
+  assert.equal(page.isLive, true);
+  assert.equal(page.videoId, "abcdefghijk");
+  assert.equal(page.continuation, "abc");
+  assert.equal(page.sendParams, "prm");
+  assert.equal(sapisidAuthorization("sap", 1_700_000_000_000), "SAPISIDHASH 1700000000_296453377efedeefa95e96dccae831344ae92830");
+  const batch = readYouTubeActions({
+    continuationContents: {
+      liveChatContinuation: {
+        actions: [{
+          addChatItemAction: {
+            item: {
+              liveChatTextMessageRenderer: {
+                id: "m1",
+                authorName: { simpleText: "Маша" },
+                authorExternalChannelId: "UC1",
+                message: { runs: [{ text: "привет" }] },
+              },
+            },
+          },
+        }],
+        continuations: [{ timedContinuationData: { continuation: "next", timeoutMs: 3000 } }],
+      },
+    },
+  });
+  assert.equal(batch.messages[0].author, "Маша");
+  assert.equal(batch.messages[0].text, "привет");
+  assert.equal(batch.continuation, "next");
 });
 
 test("an empty secret does not wipe a saved token", () => {

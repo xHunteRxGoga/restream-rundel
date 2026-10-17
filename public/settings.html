@@ -3,100 +3,71 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Подключения</title>
+  <title>Старт</title>
   <link rel="stylesheet" href="/app.css">
 </head>
 <body class="settings">
   <header class="top">
     <div>
-      <h1>Подключения</h1>
-      <p class="lede">Один вход на площадку. После этого чат читается сам, а «Во все» уходит сразу в четыре чата.</p>
+      <h1>Старт</h1>
+      <p class="lede">Сначала войди. Потом вставь две ссылки в OBS.</p>
     </div>
     <a class="text-link" href="/dock">К чату</a>
   </header>
   <p class="banner" id="banner" hidden></p>
 
   <section class="patch twitch">
-    <header><h2>Twitch</h2><p id="status-twitch"></p></header>
-    <label>Канал <input id="twitch-channel" placeholder="имя из twitch.tv/имя"></label>
-    <label>Client ID <input id="twitch-client" autocomplete="off"></label>
-    <label>Токен, если входишь без кнопки <input id="twitch-token" type="password" autocomplete="off"></label>
-    <p class="hint" id="twitch-token-hint"></p>
-    <p class="hint">Redirect: <code id="redirect-twitch"></code></p>
-    <p class="hint">Кабинет: dev.twitch.tv → Applications. Категория Chat Bot. В Redirect URL вставь адрес выше.</p>
+    <h2>Twitch</h2>
+    <p class="who" id="who-twitch"></p>
     <div class="actions">
-      <button type="button" id="twitch-login">Войти через Twitch</button>
-      <button type="button" class="ghost" data-clear="twitch.oauthToken">Отключить</button>
+      <button class="enter" type="button" id="login-twitch">Войти через Twitch</button>
+      <button class="ghost" type="button" data-clear="twitch.oauthToken,twitch.login,twitch.userId,twitch.channel">Выйти</button>
     </div>
   </section>
 
   <section class="patch youtube">
-    <header><h2>YouTube</h2><p id="status-youtube"></p></header>
-    <label>Client ID <input id="youtube-client" autocomplete="off"></label>
-    <label>Client Secret <input id="youtube-secret" type="password" autocomplete="off"></label>
-    <p class="hint" id="youtube-secret-hint"></p>
-    <p class="hint">Redirect: <code id="redirect-youtube"></code></p>
-    <p class="hint">Google Cloud → включи YouTube Data API v3 → OAuth client, тип Web application, этот redirect. На длинном эфире дневная квота может кончиться: чат напишет об этом прямо в лампе YouTube.</p>
+    <h2>YouTube</h2>
+    <p class="who" id="who-youtube"></p>
     <div class="actions">
-      <button type="button" id="youtube-login">Войти через Google</button>
-      <button type="button" class="ghost" data-clear="youtube.accessToken,youtube.refreshToken">Отключить</button>
+      <button class="enter" type="button" id="login-youtube">Войти через YouTube</button>
+      <button class="ghost" type="button" data-clear="youtube.cookies,youtube.accessToken,youtube.refreshToken,youtube.channelId,youtube.displayName">Выйти</button>
     </div>
   </section>
 
   <section class="patch kick">
-    <header><h2>Kick</h2><p id="status-kick"></p></header>
-    <label>Канал <input id="kick-channel" placeholder="имя из kick.com/имя"></label>
-    <label>ID чата, если канал сам не находится <input id="kick-room" inputmode="numeric"></label>
-    <label>Client ID <input id="kick-client" autocomplete="off"></label>
-    <label>Client Secret <input id="kick-secret" type="password" autocomplete="off"></label>
-    <label>Токен, если входишь без кнопки <input id="kick-token" type="password" autocomplete="off"></label>
-    <p class="hint" id="kick-token-hint"></p>
-    <p class="hint">Redirect: <code id="redirect-kick"></code></p>
-    <p class="hint">Приложение создаётся в кабинете разработчика Kick. Чтение идёт тем же сокетом, что и сайт. Отправка — официальным API.</p>
+    <h2>Kick</h2>
+    <p class="who" id="who-kick"></p>
     <div class="actions">
-      <button type="button" id="kick-login">Войти через Kick</button>
-      <button type="button" class="ghost" data-clear="kick.accessToken,kick.refreshToken">Отключить</button>
+      <button class="enter" type="button" id="login-kick">Войти через Kick</button>
+      <button class="ghost" type="button" data-clear="kick.cookies,kick.accessToken,kick.refreshToken,kick.channel,kick.chatroomId,kick.username">Выйти</button>
     </div>
   </section>
 
   <section class="patch vk">
-    <header><h2>VK Видео</h2><p id="status-vk"></p></header>
-    <label>Канал <input id="vk-channel" placeholder="имя из live.vkvideo.ru/имя"></label>
-    <label>Client ID <input id="vk-client" autocomplete="off"></label>
-    <label>Токен <input id="vk-token" type="password" autocomplete="off"></label>
-    <label>Refresh token <input id="vk-refresh" type="password" autocomplete="off"></label>
-    <p class="hint" id="vk-token-hint"></p>
-    <p class="hint">Redirect: <code id="redirect-vk"></code></p>
-    <p class="hint">Приложение: dev.live.vkvideo.ru. Если кнопка входа не пускает, открой live.vkvideo.ru, F12 → Application → Local Storage → ключ auth → скопируй accessToken сюда.</p>
+    <h2>VK Видео</h2>
+    <p class="who" id="who-vk"></p>
     <div class="actions">
-      <button type="button" id="vk-login">Войти через VK</button>
-      <button type="button" class="ghost" data-clear="vk.accessToken,vk.refreshToken">Отключить</button>
+      <button class="enter" type="button" id="login-vk">Войти через VK</button>
+      <button class="ghost" type="button" data-clear="vk.accessToken,vk.refreshToken,vk.channel,vk.displayName,vk.userId">Выйти</button>
     </div>
   </section>
 
-  <section class="patch bots">
-    <header><h2>Кого не показывать зрителям</h2></header>
-    <label>Ники ботов, через запятую
-      <textarea id="bots" rows="3"></textarea>
-    </label>
-    <p class="hint">Команды с «!» скрываются сами. В твоём окне они остаются, пометка «не на экране».</p>
-  </section>
-
-  <div class="actions">
-    <button type="button" id="save">Сохранить</button>
-  </div>
-
   <section class="obs">
-    <h2>Как проверить и поставить в OBS</h2>
-    <ol class="steps">
-      <li>Запусти <code>start.bat</code> на стримерском ПК и не закрывай чёрное окно. Игровой ПК для чата не нужен.</li>
-      <li>В этом чате нажми «Проверить». Если видишь четыре площадки, а команды и Nightbot помечены «не на экране» — окно работает.</li>
-      <li>Кликни ник зрителя, впиши как его звать на экране, «Сохранить ник». Пустое поле или «Как было» возвращает имя с площадки.</li>
-      <li>Окно для тебя, его зрители не видят: OBS → Доки → Пользовательские доки браузера. Имя «Чат», адрес <code id="url-dock"></code>. Ширину дока можно тянуть.</li>
-      <li>То, что видят зрители: в сцене «+» → Браузер. Адрес <code id="url-overlay"></code>, ширина 480, высота 700. «Отключать источник, когда он не виден» сними. «Обновлять браузер при активации сцены» тоже лучше снять, иначе чат моргает при каждом переключении.</li>
-      <li>Подвинь источник в угол. В студии OBS фон игры должен просвечивать между плашками. Если вместо этого серый квадрат, у источника Браузер в свойствах не должно быть своей заливки, а у страницы она уже прозрачная.</li>
-      <li>Потом подключи аккаунты выше. Лампа площадки загорается своим цветом, когда чат читается. Напиши что-нибудь в чат площадки с другого аккаунта и ответь кнопкой «Во все».</li>
-    </ol>
+    <h2>Куда вставить в OBS</h2>
+    <article class="obs-card">
+      <h3>Для себя</h3>
+      <p>Эту ссылку зрители не видят.</p>
+      <p><code id="url-dock"></code></p>
+      <button class="ghost" type="button" id="copy-dock">Скопировать</button>
+      <p>OBS → Доки → Пользовательские доки браузера → вставь ссылку.</p>
+    </article>
+    <article class="obs-card">
+      <h3>Для зрителей</h3>
+      <p>Это чат на экране.</p>
+      <p><code id="url-overlay"></code></p>
+      <button class="ghost" type="button" id="copy-overlay">Скопировать</button>
+      <p>В сцене нажми + → Браузер → вставь ссылку. Ширина 480, высота 700. Внизу окна сними две галочки: «Отключать источник, когда он не виден» и «Обновлять браузер, когда сцена становится активной».</p>
+    </article>
   </section>
   <script type="module" src="/settings.js"></script>
 </body>

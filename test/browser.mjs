@@ -8,6 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const port = 3927;
 const outDir = path.join(root, "test-results");
 fs.mkdirSync(outDir, { recursive: true });
+fs.rmSync(path.join(outDir, "config.json"), { force: true });
 
 const child = spawn(process.execPath, ["src/index.js"], {
   cwd: root,
@@ -64,8 +65,11 @@ try {
 
   const settings = await browser.newPage({ viewport: { width: 900, height: 900 } });
   await settings.goto(`http://127.0.0.1:${port}/settings`);
-  await settings.getByRole("heading", { name: "Подключения" }).waitFor();
-  await settings.getByText(`http://127.0.0.1:${port}/oauth/twitch`).waitFor();
+  await settings.getByRole("heading", { name: "Старт" }).waitFor();
+  await settings.getByRole("button", { name: "Войти через Twitch" }).waitFor();
+  await settings.getByText("Пользовательские доки браузера").waitFor();
+  const settingsText = await settings.locator("body").innerText();
+  if (settingsText.includes("Client ID")) throw new Error("На старте опять просят Client ID");
   await settings.screenshot({ path: path.join(outDir, "settings.png") });
 
   await dock.screenshot({ path: path.join(outDir, "dock.png") });

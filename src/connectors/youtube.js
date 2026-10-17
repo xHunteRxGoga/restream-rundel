@@ -1,13 +1,35 @@
+import { runYouTubeSite, sendYouTubeSite } from "./youtube-web.js";
+
 export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
   let generation = 0;
   let liveChatId = "";
+  const siteSession = {};
 
   return {
     async start() {
       const gen = ++generation;
       const youtube = getConfig().youtube;
+      if (youtube.cookies) {
+        try {
+          await runYouTubeSite({
+            cookies: JSON.parse(youtube.cookies),
+            channelId: youtube.channelId,
+            hub,
+            setStatus,
+            alive: () => gen === generation,
+            session: siteSession,
+          });
+        } catch (error) {
+          if (gen !== generation) return;
+          setStatus("youtube", "error", error.message);
+          setTimeout(() => {
+            if (gen === generation) this.start();
+          }, 8000);
+        }
+        return;
+      }
       if (!youtube.refreshToken && !youtube.accessToken) {
-        setStatus("youtube", "off", "нужен вход через Google");
+        setStatus("youtube", "off", "Войди через YouTube");
         return;
       }
       setStatus("youtube", "connecting", "ищу эфир");
@@ -39,6 +61,7 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
     },
     async send(text) {
       const youtube = getConfig().youtube;
+      if (youtube.cookies) return sendYouTubeSite(text, siteSession);
       if (!youtube.refreshToken && !youtube.accessToken) return { ok: false, error: "YouTube не подключён" };
       if (!liveChatId) return { ok: false, error: "на YouTube нет активного эфира" };
       try {

@@ -58,6 +58,10 @@ server.listen(port, host, () => {
   console.log(`Вход:     http://${host}:${port}/settings`);
   connectors.start();
   if (!process.env.NO_OPEN) {
-    spawn("cmd", ["/c", "start", "", dock], { detached: true, stdio: "ignore", windowsHide: true }).unref();
+    const config = store.get();
+    const signedIn = config.twitch.oauthToken || config.youtube.cookies || config.youtube.refreshToken
+      || config.kick.cookies || config.kick.accessToken || config.vk.accessToken;
+    const target = signedIn ? dock : `http://${host}:${port}/settings`;
+    spawn("cmd", ["/c", "start", "", target], { detached: true, stdio: "ignore", windowsHide: true }).unref();
   }
 });

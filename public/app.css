@@ -353,7 +353,20 @@ code {
 }
 
 .obs { margin-top: 28px; }
-.obs h2 { margin-bottom: 8px; }
-.steps { margin: 0; padding-left: 18px; color: var(--muted); line-height: 1.45; }
-.steps li { margin: 8px 0; }
-.steps code { color: var(--text); }
+.obs h2, .obs h3 { margin-bottom: 8px; }
+.obs-card {
+  margin-top: 14px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.obs-card p { margin: 6px 0; }
+.who { margin: 6px 0 0; color: var(--muted); }
+button.enter {
+  min-height: 48px;
+  padding: 0 16px;
+  font-size: 18px;
+}
+.patch.twitch button.enter { background: var(--twitch); color: #1a1024; }
+.patch.youtube button.enter { background: var(--youtube); color: #fff; }
+.patch.kick button.enter { background: var(--kick); color: #10210f; }
+.patch.vk button.enter { background: var(--vk); color: #fff; }

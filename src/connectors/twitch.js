@@ -144,7 +144,7 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
       const channel = (twitch.channel || twitch.login || "").replace(/^#/, "").toLowerCase();
       const token = cleanToken(twitch.oauthToken);
       if (!channel || !token) {
-        setStatus("twitch", "off", "нужны канал и вход");
+        setStatus("twitch", "off", "Войди через Twitch");
         return;
       }
 

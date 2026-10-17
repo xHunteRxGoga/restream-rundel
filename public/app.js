@@ -194,7 +194,7 @@ function ensureEmpty() {
   const empty = document.createElement("p");
   empty.className = "empty";
   empty.id = "empty";
-  empty.textContent = "Пока тихо. «Проверить» покажет сообщения. Ник зрителя меняется кликом по имени.";
+  empty.textContent = "Пока тихо. Сначала «Войти», потом «Проверить». Ник меняется кликом по имени.";
   log.append(empty);
 }
 

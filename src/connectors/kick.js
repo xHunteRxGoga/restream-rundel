@@ -42,7 +42,7 @@ export function createKickConnector({ hub, learn, getConfig, setStatus }) {
       const kick = getConfig().kick;
       const channel = kick.channel;
       if (!channel && !kick.chatroomId) {
-        setStatus("kick", "off", "нужно имя канала");
+        setStatus("kick", "off", "Войди через Kick");
         return;
       }
       setStatus("kick", "connecting", "подключаюсь");
@@ -67,7 +67,9 @@ export function createKickConnector({ hub, learn, getConfig, setStatus }) {
       stopSocket();
     },
     async send(text) {
-      const token = getConfig().kick.accessToken;
+      const kick = getConfig().kick;
+      if (kick.cookies) return sendViaSite(text, kick);
+      const token = kick.accessToken;
       if (!token) return { ok: false, error: "Kick не подключён" };
       const broadcaster = getConfig().kick.broadcasterUserId;
       const body = { type: "user", content: text };
@@ -237,4 +239,31 @@ function kickError(status, detail) {
 
 function browserAgent() {
   return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+}
+
+async function sendViaSite(text, kick) {
+  let cookies = [];
+  try {
+    cookies = JSON.parse(kick.cookies);
+  } catch {
+    return { ok: false, error: "Сессия Kick сломалась. Войди ещё раз." };
+  }
+  if (!kick.chatroomId) return { ok: false, error: "Kick не нашёл чат. Войди ещё раз." };
+  const xsrf = cookies.find((cookie) => cookie.name === "XSRF-TOKEN");
+  const headers = {
+    cookie: cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join("; "),
+    "content-type": "application/json",
+    accept: "application/json",
+    origin: "https://kick.com",
+    referer: `https://kick.com/${kick.channel || ""}`,
+    "user-agent": browserAgent(),
+  };
+  if (xsrf?.value) headers["x-xsrf-token"] = decodeURIComponent(xsrf.value);
+  const response = await fetch(`https://kick.com/api/v2/messages/send/${kick.chatroomId}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ content: text, type: "message" }),
+  });
+  if (!response.ok) return { ok: false, error: "Kick не принял сообщение. Войди ещё раз." };
+  return { ok: true };
 }

@@ -13,6 +13,7 @@ export function defaultConfig() {
       expiresAt: 0,
       displayName: "",
       channelId: "",
+      cookies: "",
     },
     kick: {
       channel: "",
@@ -24,6 +25,7 @@ export function defaultConfig() {
       broadcasterUserId: "",
       chatroomId: "",
       username: "",
+      cookies: "",
     },
     vk: {
       channel: "",
@@ -44,6 +46,7 @@ const SECRET_KEYS = new Set([
   "clientSecret",
   "refreshToken",
   "accessToken",
+  "cookies",
 ]);
 
 export function createConfigStore(filePath) {

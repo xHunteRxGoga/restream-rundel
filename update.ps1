@@ -62,6 +62,12 @@ if (-not (Test-Path -LiteralPath "node_modules") -or $saved -ne $head) {
   }
 }
 
+Write-Host "Останавливаю старый чат, если он ещё висит..."
+Get-NetTCPConnection -LocalPort 3921 -State Listen -ErrorAction SilentlyContinue |
+  Select-Object -ExpandProperty OwningProcess -Unique |
+  ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Seconds 1
+
 & node (Join-Path $PSScriptRoot "src\index.js")
 $code = $LASTEXITCODE
 if ($code -ne 0) {

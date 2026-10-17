@@ -17,6 +17,7 @@ export async function loginWithBrowser({ root, platform }) {
   if (!executablePath) {
     throw new Error("Не нашёл Яндекс Браузер. Поставь его с https://browser.yandex.ru и нажми вход ещё раз.");
   }
+  console.log(`Открываю Яндекс Браузер: ${executablePath}`);
   let context;
   try {
     context = await chromium.launchPersistentContext(profile, {

@@ -51,20 +51,12 @@ const server = createApp({
 const port = Number(process.env.PORT) || 3921;
 const host = "127.0.0.1";
 
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE") {
-    console.log("Чат уже запущен. Закрой старое чёрное окно и запусти start.bat ещё раз.");
-  } else {
-    console.log(error.message);
-  }
-  process.exit(1);
-});
-
 server.listen(port, host, () => {
   const dock = `http://${host}:${port}/dock`;
   console.log(`Все чаты: ${dock}`);
   console.log(`Экран:    http://${host}:${port}/overlay`);
   console.log(`Вход:     http://${host}:${port}/settings`);
+  console.log("Окно входа открывается в Яндекс Браузере.");
   connectors.start();
   if (!process.env.NO_OPEN) {
     const config = store.get();

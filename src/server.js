@@ -44,6 +44,19 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
   });
 
   const wss = new WebSocketServer({ server, path: "/ws" });
+  let listenFailed = false;
+  const onListenError = (error) => {
+    if (listenFailed) return;
+    listenFailed = true;
+    if (error?.code === "EADDRINUSE") {
+      console.log("Чат уже был запущен. Закрой старое чёрное окно и запусти start.bat ещё раз.");
+    } else {
+      console.log(error?.message || error);
+    }
+    process.exit(1);
+  };
+  server.on("error", onListenError);
+  wss.on("error", onListenError);
   wss.on("connection", (socket) => {
     socket.send(JSON.stringify(publicState("snapshot")));
   });

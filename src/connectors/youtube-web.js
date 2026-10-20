@@ -32,39 +32,67 @@ export function parseYouTubeLivePage(html, pageUrl = "") {
 }
 
 export function readYouTubeActions(json) {
-  const block = json?.continuationContents?.liveChatContinuation || json?.contents?.liveChatContinuation;
   const messages = [];
-  for (const action of block?.actions || []) collectYouTubeAction(action, messages);
-  const nextBlock = block?.continuations?.[0] || {};
-  const timed = nextBlock.timedContinuationData || nextBlock.invalidationContinuationData || nextBlock.reloadContinuationData || {};
-  const asked = Number(timed.timeoutMs);
+  const seenIds = new Set();
+  collectYouTubeNode(json, messages, seenIds, 0);
+  const next = findYouTubeContinuation(json) || {};
+  const asked = Number(next.timeoutMs);
   return {
     messages,
-    continuation: timed.continuation || "",
-    timeout: Math.min(900, Math.max(350, Number.isFinite(asked) && asked > 0 ? asked : 700)),
+    continuation: next.continuation || "",
+    timeout: Math.min(1800, Math.max(800, Number.isFinite(asked) && asked > 0 ? asked : 1200)),
   };
 }
 
-function collectYouTubeAction(action, messages) {
-  const nested = action?.replayChatItemAction?.actions;
-  if (Array.isArray(nested)) {
-    for (const child of nested) collectYouTubeAction(child, messages);
+function collectYouTubeNode(node, messages, seenIds, depth) {
+  if (!node || depth > 14) return;
+  if (Array.isArray(node)) {
+    for (const item of node) collectYouTubeNode(item, messages, seenIds, depth + 1);
     return;
   }
-  const item = action?.addChatItemAction?.item;
-  const renderer = item?.liveChatTextMessageRenderer || item?.liveChatPaidMessageRenderer;
-  if (!renderer) return;
+  if (typeof node !== "object") return;
+  const renderer = node.liveChatTextMessageRenderer || node.liveChatPaidMessageRenderer;
+  if (renderer) pushYouTubeRenderer(renderer, messages, seenIds);
+  for (const value of Object.values(node)) {
+    if (value && typeof value === "object") collectYouTubeNode(value, messages, seenIds, depth + 1);
+  }
+}
+
+function pushYouTubeRenderer(renderer, messages, seenIds) {
+  const id = renderer.id || "";
+  if (id && seenIds.has(id)) return;
+  if (id) seenIds.add(id);
   const parts = youtubeRuns(renderer.message?.runs);
   if (!parts.text) return;
   messages.push({
     platform: "youtube",
-    platformMessageId: renderer.id || "",
+    platformMessageId: id,
     author: renderer.authorName?.simpleText || "без ника",
     authorId: renderer.authorExternalChannelId || "",
     text: parts.text,
     emotes: parts.emotes,
     avatar: youtubeAvatar(renderer),
   });
+}
+
+function findYouTubeContinuation(node, depth = 0) {
+  if (!node || depth > 12) return null;
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      const found = findYouTubeContinuation(item, depth + 1);
+      if (found?.continuation) return found;
+    }
+    return null;
+  }
+  if (typeof node !== "object") return null;
+  const timed = node.timedContinuationData || node.invalidationContinuationData || node.reloadContinuationData;
+  if (timed?.continuation) return { continuation: timed.continuation, timeoutMs: timed.timeoutMs };
+  for (const value of Object.values(node)) {
+    if (!value || typeof value !== "object") continue;
+    const found = findYouTubeContinuation(value, depth + 1);
+    if (found?.continuation) return found;
+  }
+  return null;
 }
 
 export function youtubeRuns(runs) {
@@ -157,6 +185,7 @@ export async function runYouTubeSite({ cookies, channelId, handle, videoId, hub,
     Object.assign(session, page, { cookies });
     setStatus("youtube", "live", "чат эфира");
     let continuation = page.continuation;
+    let misses = 0;
     while (alive() && continuation) {
       const response = await fetch(`https://www.youtube.com/youtubei/v1/live_chat/get_live_chat?key=${encodeURIComponent(session.apiKey)}`, {
         method: "POST",
@@ -169,15 +198,26 @@ export async function runYouTubeSite({ cookies, channelId, handle, videoId, hub,
       if ((response.status === 401 || response.status === 403) && session.cookies?.length) {
         throw new Error("Сессия YouTube кончилась. Войди ещё раз.");
       }
-      if (!response.ok) break;
+      if (!response.ok) {
+        misses += 1;
+        if (misses >= 4) break;
+        await sleep(1000);
+        continue;
+      }
       const json = await response.json();
       const batch = readYouTubeActions(json);
       for (const message of batch.messages) hub.ingest(message);
       if (!batch.continuation) {
+        misses += 1;
+        if (misses < 3) {
+          await sleep(1000);
+          continue;
+        }
         setStatus("youtube", "connecting", "эфир на YouTube закончился, жду новый");
         await sleep(15000);
         break;
       }
+      misses = 0;
       continuation = batch.continuation;
       session.continuation = continuation;
       await sleep(batch.timeout);

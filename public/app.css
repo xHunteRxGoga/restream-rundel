@@ -171,6 +171,11 @@ button.ghost {
 .strip[data-platform="vk"] { --bar: var(--vk); }
 .strip[data-platform="local"] { --bar: var(--text); }
 .strip[data-hidden="true"] { opacity: 0.42; }
+.strip:nth-child(even) { margin-left: 10px; }
+body.dock .strip:nth-child(odd) { background: #1c1f28; }
+body.dock .strip:nth-child(even) { background: #262b36; }
+body.overlay .strip:nth-child(odd) { background: rgba(10, 12, 16, var(--strip-alpha, 0.62)); }
+body.overlay .strip:nth-child(even) { background: rgba(36, 42, 54, calc(var(--strip-alpha, 0.62) + 0.14)); }
 
 .meta {
   display: flex;

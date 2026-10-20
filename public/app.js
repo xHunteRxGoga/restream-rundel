@@ -60,11 +60,8 @@ function connect() {
   ws.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "snapshot") {
-      rows.clear();
-      byId.clear();
-      log.replaceChildren();
-      if (mode === "dock") ensureEmpty();
-      for (const message of data.messages) upsert(message);
+      for (const message of data.messages || []) upsert(message);
+      if (mode === "dock" && !log.querySelector(".strip")) ensureEmpty();
       for (const [platform, status] of Object.entries(data.statuses || {})) setLamp(platform, status);
       if (preview) paintPreview();
       applyLook(data.look);
@@ -115,6 +112,7 @@ function fill(row, message) {
   row.className = row.classList.contains("in") ? "strip in" : "strip";
   row.dataset.platform = message.platform;
   row.dataset.hidden = message.overlay ? "false" : "true";
+  row.dataset.at = String(message.at || Date.now());
   row.replaceChildren();
 
   const head = document.createElement("div");
@@ -186,14 +184,19 @@ function fill(row, message) {
 
 function trimOverlay() {
   const strips = () => [...log.querySelectorAll(".strip")];
+  const held = (node) => Date.now() - Number(node.dataset.at || 0) < 2200;
   let visible = strips();
   while (visible.length > overlayLimit) {
-    dropStrip(visible[0]);
+    const extra = visible.find((node) => !held(node));
+    if (!extra) break;
+    dropStrip(extra);
     visible = strips();
   }
   if (log.clientHeight > 0) {
     while (log.scrollHeight > log.clientHeight + 1 && strips().length > 1) {
-      dropStrip(strips()[0]);
+      const extra = strips().find((node) => !held(node));
+      if (!extra) break;
+      dropStrip(extra);
     }
   }
   fadeOverlay();

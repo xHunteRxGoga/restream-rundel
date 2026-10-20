@@ -18,7 +18,11 @@ if (Have "git") {
     git remote add origin "https://github.com/xHunteRxGoga/restream-rundel.git" | Out-Null
   }
 
-  Write-Host "Обновляю с GitHub..."
+  Write-Host "Проверяю версию на GitHub..."
+  $local = ""
+  if (Test-Path -LiteralPath ".git") {
+    $local = "$((git rev-parse --short HEAD 2>$null))".Trim()
+  }
   $token = ""
   if (Have "gh") {
     $token = "$(gh auth token 2>$null)".Trim()
@@ -31,14 +35,23 @@ if (Have "git") {
   }
 
   if ($LASTEXITCODE -eq 0) {
-    git checkout -B main origin/main 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0 -and $fresh) {
-      git clean -fd -e data -e node_modules | Out-Null
+    $remote = "$((git rev-parse --short origin/main 2>$null))".Trim()
+    if ($local -and $remote -and $local -eq $remote) {
+      Write-Host "Уже последняя версия $local. Запускаю её."
+    } else {
+      Write-Host "Обновляю $local -> $remote"
       git checkout -B main origin/main 2>&1 | Out-Null
+      if ($LASTEXITCODE -ne 0 -and $fresh) {
+        git clean -fd -e data -e node_modules | Out-Null
+        git checkout -B main origin/main 2>&1 | Out-Null
+      }
+      git reset --hard origin/main | Out-Null
+      if ($LASTEXITCODE -eq 0) {
+        Write-Host "Обновление скачано. Настройки в папке data не трогал."
+      }
     }
-    git reset --hard origin/main | Out-Null
   } else {
-    Write-Host "GitHub сейчас недоступен. Запускаю то, что уже скачано."
+    Write-Host "GitHub сейчас недоступен. Запускаю версию $local"
   }
 }
 

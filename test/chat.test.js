@@ -4,7 +4,7 @@ import { parseYouTubeLivePage, readYouTubeActions, sapisidAuthorization } from "
 import { hiddenOnOverlay } from "../src/filter.js";
 import { createHub } from "../src/hub.js";
 import { renderSafeHtml } from "../src/render.js";
-import { parseTwitchLine } from "../src/connectors/twitch.js";
+import { parseTwitchLine, takeIrcLines } from "../src/connectors/twitch.js";
 import { parseKickContent } from "../src/connectors/kick.js";
 import { vkTextFromBlocks } from "../src/connectors/vk.js";
 import crypto from "node:crypto";
@@ -167,7 +167,7 @@ test("youtube page gives the chat continuation and a stable login hash", () => {
   assert.equal(batch.messages[0].author, "Маша");
   assert.equal(batch.messages[0].text, "привет");
   assert.equal(batch.continuation, "next");
-  assert.ok(batch.timeout <= 900);
+  assert.ok(batch.timeout <= 1800);
   const emoji = readYouTubeActions({
     continuationContents: {
       liveChatContinuation: {
@@ -194,7 +194,7 @@ test("youtube page gives the chat continuation and a stable login hash", () => {
   });
   assert.equal(emoji.messages[0].text, "🤣😂\uFFFC");
   assert.equal(emoji.messages[0].emotes[0].url, "https://yt3.ggpht.com/emoji/cat");
-  assert.equal(emoji.timeout, 900);
+  assert.equal(emoji.timeout, 1800);
 });
 
 test("clearing the check removes only the fake messages", () => {
@@ -250,4 +250,12 @@ test("a stream link becomes the channel that chat should read", () => {
   const video = streamsFromInput({ youtube: "https://youtu.be/dQw4w9wgxcQ" });
   assert.equal(video.youtube.videoId, "dQw4w9wgxcQ");
   assert.equal(video.youtube.handle, "");
+});
+
+test("a twitch line split across two packets still becomes one message", () => {
+  const first = takeIrcLines("", "@id=m1 :user!u@h PRIVMSG #chan :при");
+  assert.deepEqual(first.lines, []);
+  const second = takeIrcLines(first.rest, "вет\r\n");
+  assert.equal(second.lines.length, 1);
+  assert.equal(parseTwitchLine(second.lines[0]).text, "привет");
 });

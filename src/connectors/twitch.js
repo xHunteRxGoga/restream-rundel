@@ -49,6 +49,12 @@ export function emotesFromTag(tag, text) {
   return emotes;
 }
 
+export function takeIrcLines(buffer, chunk) {
+  const text = `${buffer || ""}${chunk || ""}`;
+  const lines = text.split(/\r?\n/);
+  return { rest: lines.pop() ?? "", lines: lines.filter((line) => line.length > 0) };
+}
+
 export function parseTwitchLine(raw) {
   const line = String(raw ?? "").replace(/\r$/, "");
   if (!line) return null;
@@ -189,6 +195,7 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
       const WebSocket = (await import("ws")).default;
       const ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
       socket = ws;
+      let ircBuffer = "";
       const nick = token
         ? (getConfig().twitch.login || channel).toLowerCase()
         : `justinfan${Math.floor(10000 + Math.random() * 89999)}`;
@@ -202,7 +209,9 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
       });
       ws.on("message", (data) => {
         if (gen !== generation) return;
-        for (const raw of data.toString().split("\n")) {
+        const taken = takeIrcLines(ircBuffer, data.toString());
+        ircBuffer = taken.rest.length > 200000 ? "" : taken.rest;
+        for (const raw of taken.lines) {
           const event = parseTwitchLine(raw);
           if (!event) continue;
           if (event.type === "ping") {

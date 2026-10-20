@@ -50,10 +50,12 @@ public static class RundelLockedCopy {
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
   static extern int GetFinalPathNameByHandle(IntPtr handle, StringBuilder buffer, int capacity, int flags);
 
-  public static bool Copy(string needle, string dest) {
+  public static bool Copy(string needle, string dest, string processNames) {
     if (IntPtr.Size != 8) return false;
     var pids = new HashSet<int>();
-    foreach (var process in Process.GetProcessesByName("browser")) pids.Add(process.Id);
+    foreach (var name in (processNames ?? "chrome,msedge,browser").Split(',')) {
+      foreach (var process in Process.GetProcessesByName(name.Trim())) pids.Add(process.Id);
+    }
     if (pids.Count == 0) return false;
 
     int size = 1 << 20;
@@ -111,6 +113,6 @@ public static class RundelLockedCopy {
 }
 "@
 
-if (-not [RundelLockedCopy]::Copy($Source, $Destination)) {
+if (-not [RundelLockedCopy]::Copy($Source, $Destination, "chrome,msedge,browser")) {
   exit 2
 }

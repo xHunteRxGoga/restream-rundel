@@ -40,33 +40,60 @@ export function yandexUserData() {
   return path.join(local, "Yandex", "YandexBrowser", "User Data");
 }
 
-export function readYandexCookies(hostParts) {
-  const userData = yandexUserData();
-  if (!fs.existsSync(userData)) {
-    throw new Error("Яндекс Браузер ещё ни разу не открывался на этом ПК.");
+export function readCookiesFromBrowsers(hostParts) {
+  const cookies = [];
+  for (const browser of installedBrowsers()) {
+    try {
+      cookies.push(...readProfileCookies(browser.userData, hostParts));
+    } catch {
+      // этот браузер не отдал куки, смотрим следующий
+    }
   }
+  return cookies;
+}
+
+export function readVkFromBrowsers() {
+  for (const browser of installedBrowsers()) {
+    const found = readVkAuth(browser.userData);
+    if (found?.accessToken) return found;
+  }
+  return null;
+}
+
+function installedBrowsers() {
+  const local = process.env.LOCALAPPDATA || "";
+  return [
+    path.join(local, "Yandex", "YandexBrowser", "User Data"),
+    path.join(local, "Google", "Chrome", "User Data"),
+    path.join(local, "Microsoft", "Edge", "User Data"),
+  ].filter((dir) => fs.existsSync(dir)).map((userData) => ({ userData }));
+}
+
+function readProfileCookies(userData, hostParts) {
   const key = encryptionKey(userData);
-  const profiles = profileNames(userData);
   const wanted = hostParts.map((part) => part.toLowerCase());
   const cookies = [];
-  for (const profile of profiles) {
+  for (const profile of profileNames(userData)) {
     const dbPath = cookieDatabase(userData, profile);
     if (!dbPath) continue;
     for (const row of queryCookies(dbPath)) {
       const host = String(row.host_key || "").toLowerCase();
       if (!wanted.some((part) => host.includes(part))) continue;
-      const encrypted = row.encrypted_value?.length ? row.encrypted_value : null;
-      const value = encrypted ? decryptCookieValue(encrypted, key) : String(row.value || "");
+      let value = "";
+      try {
+        const encrypted = row.encrypted_value?.length ? row.encrypted_value : null;
+        value = encrypted ? decryptCookieValue(encrypted, key) : String(row.value || "");
+      } catch {
+        continue;
+      }
       if (!value) continue;
       cookies.push({ name: row.name, value, domain: row.host_key, profile });
     }
-    if (cookies.length) return cookies;
   }
   return cookies;
 }
 
-export function readVkAuthFromProfile() {
-  const userData = yandexUserData();
+function readVkAuth(userData) {
   for (const profile of profileNames(userData)) {
     const dir = path.join(userData, profile, "Local Storage", "leveldb");
     if (!fs.existsSync(dir)) continue;

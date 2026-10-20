@@ -19,7 +19,7 @@ async function login(platform) {
   const previous = button.textContent;
   button.disabled = true;
   button.textContent = "Подключаю аккаунт...";
-  banner("Яндекс сейчас закроется и откроется снова с твоими аккаунтами. Подожди, страницу не закрывай.");
+  banner("Откроется вкладка в том браузере, где ты уже сидишь в аккаунте. Подожди, страницу не закрывай.");
   try {
     const response = await fetch(`/api/login/${platform}`, { method: "POST" });
     const body = await response.json().catch(() => ({}));

@@ -126,9 +126,12 @@ function fill(row, message) {
   time.dateTime = new Date(message.at).toISOString();
   time.textContent = new Date(message.at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
   const shown = mode === "overlay" ? message.author : (message.displayAuthor || message.author);
-  head.append(avatarNode(message), plat);
+  head.append(plat);
+  const person = document.createElement("span");
+  person.className = "person";
+  person.append(avatarNode(message));
   if (mode === "dock" && editingKey === message.personKey) {
-    head.append(nickEditor(message));
+    person.append(nickEditor(message));
   } else {
     const author = document.createElement(mode === "dock" ? "button" : "span");
     if (mode === "dock") author.type = "button";
@@ -136,7 +139,12 @@ function fill(row, message) {
     author.textContent = shown;
     author.style.color = usableColor(message.color, meta.color);
     if (mode === "dock") author.addEventListener("click", () => openNick(message));
-    head.append(author);
+    person.append(author);
+  }
+  head.append(person);
+  if (mode === "dock" && message.platform !== "local") {
+    head.append(modButton(message, "timeout", "Мут"));
+    head.append(modButton(message, "ban", "Бан"));
   }
   head.append(time);
   if (mode === "dock" && message.displayAuthor && message.displayAuthor !== message.author) {
@@ -314,6 +322,42 @@ function ensureEmpty() {
 
 const byId = new Map();
 let editingKey = "";
+
+function modButton(message, action, label) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "mod";
+  button.textContent = label;
+  button.addEventListener("click", async () => {
+    const previous = button.textContent;
+    button.disabled = true;
+    button.textContent = "...";
+    try {
+      const response = await fetch("/api/mod", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          platform: message.platform,
+          author: message.author,
+          authorId: message.authorId || "",
+          action,
+          seconds: 600,
+        }),
+      });
+      const body = await response.json().catch(() => ({}));
+      button.textContent = response.ok ? "ок" : "нет";
+      button.title = body.error || (response.ok ? "готово" : "не вышло");
+    } catch {
+      button.textContent = "нет";
+      button.title = "чат не ответил";
+    }
+    setTimeout(() => {
+      button.disabled = false;
+      button.textContent = previous;
+    }, 1800);
+  });
+  return button;
+}
 
 function avatarNode(message) {
   const url = String(message.avatar || "");

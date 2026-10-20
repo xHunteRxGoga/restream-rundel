@@ -11,7 +11,7 @@
     <div>
       <h1>Старт</h1>
       <p class="lede">Вставь ссылку на канал или на текущий эфир. Чат подключится сам, пока стрим идёт.</p>
-      <p class="hint">сборка dock-fit</p>
+      <p class="hint">сборка account-mod. Ссылки, ники и доступ хранятся на этом компьютере и не стираются обновлением.</p>
     </div>
     <a class="text-link" href="/look">Вид чата</a>
     <a class="text-link" href="/dock">К чату</a>
@@ -24,6 +24,12 @@
       <input id="link-twitch" placeholder="https://www.twitch.tv/ник" autocomplete="off" spellcheck="false">
     </label>
     <p class="who" id="who-twitch"></p>
+    <label>Номер приложения
+      <input id="app-twitch" autocomplete="off" spellcheck="false">
+    </label>
+    <p class="redir">Адрес возврата <code id="redir-twitch"></code> <button class="ghost" type="button" id="copy-redir-twitch">Скопировать</button></p>
+    <button class="enter" type="button" id="allow-twitch">Разрешить Twitch</button>
+    <p class="who" id="auth-twitch"></p>
   </section>
   <section class="patch youtube">
     <h2>YouTube</h2>
@@ -31,6 +37,15 @@
       <input id="link-youtube" placeholder="https://www.youtube.com/@канал/live" autocomplete="off" spellcheck="false">
     </label>
     <p class="who" id="who-youtube"></p>
+    <label>Номер приложения
+      <input id="app-youtube" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Секрет
+      <input id="secret-youtube" type="password" autocomplete="off" spellcheck="false">
+    </label>
+    <p class="redir">Адрес возврата <code id="redir-youtube"></code> <button class="ghost" type="button" id="copy-redir-youtube">Скопировать</button></p>
+    <button class="enter" type="button" id="allow-youtube">Разрешить YouTube</button>
+    <p class="who" id="auth-youtube"></p>
   </section>
   <section class="patch kick">
     <h2>Kick</h2>
@@ -38,6 +53,15 @@
       <input id="link-kick" placeholder="https://kick.com/ник" autocomplete="off" spellcheck="false">
     </label>
     <p class="who" id="who-kick"></p>
+    <label>Номер приложения
+      <input id="app-kick" autocomplete="off" spellcheck="false">
+    </label>
+    <label>Секрет
+      <input id="secret-kick" type="password" autocomplete="off" spellcheck="false">
+    </label>
+    <p class="redir">Адрес возврата <code id="redir-kick"></code> <button class="ghost" type="button" id="copy-redir-kick">Скопировать</button></p>
+    <button class="enter" type="button" id="allow-kick">Разрешить Kick</button>
+    <p class="who" id="auth-kick"></p>
   </section>
   <section class="patch vk">
     <h2>VK Видео</h2>
@@ -45,6 +69,12 @@
       <input id="link-vk" placeholder="https://live.vkvideo.ru/ник" autocomplete="off" spellcheck="false">
     </label>
     <p class="who" id="who-vk"></p>
+    <label>Номер приложения
+      <input id="app-vk" autocomplete="off" spellcheck="false">
+    </label>
+    <p class="redir">Адрес возврата <code id="redir-vk"></code> <button class="ghost" type="button" id="copy-redir-vk">Скопировать</button></p>
+    <button class="enter" type="button" id="allow-vk">Разрешить VK</button>
+    <p class="who" id="auth-vk"></p>
   </section>
   <div class="actions">
     <button class="enter" type="button" id="connect">Подключить чаты</button>

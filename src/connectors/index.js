@@ -27,6 +27,16 @@ export function createConnectors(options) {
       this.stop();
       this.start();
     },
+    async moderate(platform, command) {
+      const connector = connectors[platform];
+      if (!connector?.moderate) return { ok: false, error: "Эта площадка так не умеет" };
+      try {
+        const result = await connector.moderate(command);
+        return { ok: Boolean(result?.ok), error: result?.error || "" };
+      } catch (error) {
+        return { ok: false, error: error.message || "не вышло" };
+      }
+    },
     async send(text) {
       return Promise.all(
         PLATFORMS.map(async (platform) => {

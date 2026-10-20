@@ -10,7 +10,20 @@ document.getElementById("connect").addEventListener("click", connect);
 
 for (const platform of ["twitch", "youtube", "kick", "vk"]) {
   document.getElementById(`link-${platform}`).value = savedLink(platform, config);
+  document.getElementById(`app-${platform}`).value = config[platform].clientId || "";
+  document.getElementById(`redir-${platform}`).textContent = `${origin}/oauth/${platform}`;
+  document.getElementById(`copy-redir-${platform}`).addEventListener("click", () => copy(`${origin}/oauth/${platform}`, `copy-redir-${platform}`));
+  document.getElementById(`allow-${platform}`).addEventListener("click", () => allow(platform));
+  document.getElementById(`auth-${platform}`).textContent = hasAccess(platform, config)
+    ? "Доступ есть. Можно писать, мутить и банить."
+    : "Доступа ещё нет.";
 }
+const secretYouTube = document.getElementById("secret-youtube");
+const secretKick = document.getElementById("secret-kick");
+if (config.youtube.clientSecret) secretYouTube.placeholder = "уже сохранён";
+if (config.kick.clientSecret) secretKick.placeholder = "уже сохранён";
+const connected = new URLSearchParams(location.search).get("connected");
+if (connected) banner(`${nameOf(connected)} разрешил доступ. Он сохранён на этом компьютере и не сотрётся при обновлении.`);
 
 const statuses = {};
 paint();
@@ -38,6 +51,7 @@ async function connect() {
           kick: value("kick"),
           vk: value("vk"),
         },
+        ...appPatch(),
       }),
     });
     const body = await response.json().catch(() => ({}));
@@ -45,7 +59,7 @@ async function connect() {
       banner(body.error || "Не сохранилось.");
       return;
     }
-    banner("Ссылки сохранены. Если эфир уже идёт, чат появится в доке и на экране.");
+    banner("Ссылки сохранены на этом компьютере. Если эфир уже идёт, чат появится в доке и на экране.");
   } catch {
     banner("Чат не ответил. Проверь, что чёрное окно start.bat ещё открыто.");
   } finally {
@@ -56,6 +70,53 @@ async function connect() {
 
 function value(platform) {
   return document.getElementById(`link-${platform}`).value.trim();
+}
+
+function appPatch() {
+  const patch = { twitch: {}, youtube: {}, kick: {}, vk: {} };
+  for (const platform of ["twitch", "youtube", "kick", "vk"]) {
+    const id = document.getElementById(`app-${platform}`).value.trim();
+    if (id) patch[platform].clientId = id;
+  }
+  const youtubeSecret = document.getElementById("secret-youtube").value.trim();
+  const kickSecret = document.getElementById("secret-kick").value.trim();
+  if (youtubeSecret) patch.youtube.clientSecret = youtubeSecret;
+  if (kickSecret) patch.kick.clientSecret = kickSecret;
+  return patch;
+}
+
+async function allow(platform) {
+  const button = document.getElementById(`allow-${platform}`);
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(appPatch()),
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      banner(body.error || "Номер не сохранился.");
+      return;
+    }
+    window.open(`/oauth/${platform}/start`, "_blank");
+    banner("Откроется вкладка площадки. Нажми «Разрешить». После этого доступ останется на этом компьютере.");
+  } catch {
+    banner("Чат не ответил. Проверь, что чёрное окно start.bat ещё открыто.");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function hasAccess(platform, source) {
+  if (platform === "twitch") return Boolean(source.twitch.oauthToken);
+  if (platform === "youtube") return Boolean(source.youtube.refreshToken || source.youtube.accessToken);
+  if (platform === "kick") return Boolean(source.kick.accessToken);
+  return Boolean(source.vk.accessToken);
+}
+
+function nameOf(platform) {
+  return { twitch: "Twitch", youtube: "YouTube", kick: "Kick", vk: "VK" }[platform] || platform;
 }
 
 function savedLink(platform, source) {

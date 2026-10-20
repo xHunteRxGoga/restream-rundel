@@ -5,6 +5,12 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
   let liveChatId = "";
   const siteSession = {};
 
+  async function currentLiveChat(token) {
+    if (liveChatId) return liveChatId;
+    liveChatId = await findLiveChatId(token);
+    return liveChatId;
+  }
+
   return {
     async start() {
       const gen = ++generation;
@@ -65,11 +71,14 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
     },
     async send(text) {
       const youtube = getConfig().youtube;
-      if (youtube.cookies) return sendYouTubeSite(text, siteSession);
-      if (!youtube.refreshToken && !youtube.accessToken) return { ok: false, error: "YouTube не подключён" };
-      if (!liveChatId) return { ok: false, error: "на YouTube нет активного эфира" };
+      if (!youtube.refreshToken && !youtube.accessToken) {
+        if (youtube.cookies) return sendYouTubeSite(text, siteSession);
+        return { ok: false, error: "YouTube не подключён" };
+      }
       try {
         const token = await accessToken(getConfig, learn);
+        const chatId = await currentLiveChat(token);
+        if (!chatId) return { ok: false, error: "на YouTube нет активного эфира" };
         const response = await fetch("https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet", {
           method: "POST",
           headers: {
@@ -78,11 +87,43 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
           },
           body: JSON.stringify({
             snippet: {
-              liveChatId,
+              liveChatId: chatId,
               type: "textMessageEvent",
               textMessageDetails: { messageText: text },
             },
           }),
+        });
+        if (!response.ok) {
+          const json = await response.json().catch(() => ({}));
+          return { ok: false, error: youtubeError(json, response.status) };
+        }
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: error.message };
+      }
+    },
+    async moderate(command) {
+      if (!getConfig().youtube.refreshToken && !getConfig().youtube.accessToken) {
+        return { ok: false, error: "Сначала разреши доступ YouTube на странице Старт" };
+      }
+      if (!command.authorId) return { ok: false, error: "У этого сообщения нет id канала YouTube" };
+      try {
+        const token = await accessToken(getConfig, learn);
+        const chatId = await currentLiveChat(token);
+        if (!chatId) return { ok: false, error: "на YouTube нет активного эфира" };
+        const snippet = {
+          liveChatId: chatId,
+          type: command.action === "ban" ? "permanent" : "temporary",
+          bannedUserDetails: { channelId: command.authorId },
+        };
+        if (command.action !== "ban") snippet.banDurationSeconds = command.seconds || 600;
+        const response = await fetch("https://www.googleapis.com/youtube/v3/liveChat/bans?part=snippet", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ snippet }),
         });
         if (!response.ok) {
           const json = await response.json().catch(() => ({}));

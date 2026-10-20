@@ -94,6 +94,26 @@ export function createVkConnector({ hub, learn, getConfig, setStatus }) {
       }
       return { ok: true };
     },
+    async moderate(command) {
+      const vk = getConfig().vk;
+      if (!vk.accessToken || !vk.channel) return { ok: false, error: "Сначала разреши доступ VK на странице Старт" };
+      if (!command.authorId) return { ok: false, error: "У этого сообщения нет id VK" };
+      const body = new URLSearchParams({
+        user_id: command.authorId,
+        by_stream: "false",
+        is_permanent: command.action === "ban" ? "true" : "false",
+      });
+      if (command.action !== "ban") body.set("period", String(command.seconds || 600));
+      if (command.action === "ban") body.set("clean_messages", "true");
+      const response = await vkFetch(
+        getConfig,
+        learn,
+        `/channel/${encodeURIComponent(vk.channel)}/public_video_stream/ban/stream/slot/default`,
+        { method: "PUT", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body },
+      );
+      if (!response.ok) return { ok: false, error: `VK ответил ${response.status}` };
+      return { ok: true };
+    },
   };
 
   async function learnSelf() {

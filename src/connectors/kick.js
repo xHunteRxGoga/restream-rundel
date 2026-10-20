@@ -98,7 +98,43 @@ export function createKickConnector({ hub, learn, getConfig, setStatus }) {
       }
       return { ok: true };
     },
+    async moderate(command) {
+      const kick = getConfig().kick;
+      if (!kick.accessToken) return { ok: false, error: "Сначала разреши доступ Kick на странице Старт" };
+      if (!command.authorId) return { ok: false, error: "У этого сообщения нет id Kick" };
+      const broadcaster = await broadcasterId();
+      if (!broadcaster) return { ok: false, error: "Не вижу id канала Kick" };
+      const body = {
+        broadcaster_user_id: Number(broadcaster),
+        user_id: Number(command.authorId),
+      };
+      if (command.action !== "ban") body.duration = Math.max(1, Math.round((command.seconds || 600) / 60));
+      const response = await fetch("https://api.kick.com/public/v1/moderation/bans", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getConfig().kick.accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) return { ok: false, error: kickError(response.status, await response.text()) };
+      return { ok: true };
+    },
   };
+
+  async function broadcasterId() {
+    const kick = getConfig().kick;
+    if (kick.broadcasterUserId) return kick.broadcasterUserId;
+    if (!kick.channel) return "";
+    const response = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(kick.channel)}`, {
+      headers: { Accept: "application/json", "User-Agent": browserAgent() },
+    });
+    if (!response.ok) return "";
+    const json = await response.json();
+    const id = String(json.user_id || json.user?.id || "");
+    if (id) learn({ kick: { broadcasterUserId: id } });
+    return id;
+  }
 
   async function learnSelf() {
     const response = await fetch("https://api.kick.com/public/v1/users", {

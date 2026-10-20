@@ -87,6 +87,20 @@ export function createApp({ root, store, hub, statuses, connectors, bindPublish 
       connectors.reload();
       return sendJson(response, 200, { ok: true });
     }
+    if (request.method === "POST" && url.pathname === "/api/mod") {
+      const body = await readJson(request);
+      const platform = String(body.platform || "");
+      if (!PLATFORMS.includes(platform)) return sendJson(response, 400, { error: "Не понял площадку." });
+      const action = body.action === "ban" ? "ban" : "timeout";
+      const seconds = Math.min(1209600, Math.max(1, Number(body.seconds) || 600));
+      const result = await connectors.moderate(platform, {
+        action,
+        author: String(body.author || "").replace(/[\r\n]/g, "").slice(0, 40),
+        authorId: String(body.authorId || "").replace(/[\r\n]/g, "").slice(0, 80),
+        seconds,
+      });
+      return sendJson(response, result.ok ? 200 : 400, result);
+    }
     if (request.method === "POST" && url.pathname === "/api/send") {
       const body = await readJson(request);
       const text = String(body.text ?? "").trim();

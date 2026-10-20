@@ -255,6 +255,22 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
       socket.send(`PRIVMSG #${channel} :${text}`);
       return { ok: true };
     },
+    async moderate(command) {
+      const channel = (getConfig().twitch.channel || getConfig().twitch.login || "").replace(/^#/, "").toLowerCase();
+      if (!cleanToken(getConfig().twitch.oauthToken)) {
+        return { ok: false, error: "Сначала разреши доступ Twitch на странице Старт" };
+      }
+      if (!socket || socket.readyState !== 1 || !channel) {
+        return { ok: false, error: "Twitch не в чате" };
+      }
+      const name = String(command.author || "").replace(/^@/, "").trim();
+      if (!name) return { ok: false, error: "Не вижу ник" };
+      const line = command.action === "ban"
+        ? `/ban ${name}`
+        : `/timeout ${name} ${command.seconds || 600}`;
+      socket.send(`PRIVMSG #${channel} :${line}`);
+      return { ok: true };
+    },
   };
 }
 

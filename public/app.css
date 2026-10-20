@@ -194,6 +194,23 @@ button.ghost {
   line-height: 1;
 }
 
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mod {
+  flex: none;
+  min-height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
 .nick-inline {
   display: flex;
   align-items: center;
@@ -509,7 +526,8 @@ label.check input { width: auto; }
 @media (max-width: 760px) {
   .look-grid { grid-template-columns: 1fr; }
 }
-.who { margin: 6px 0 0; color: var(--muted); }
+.redir { margin: 6px 0; color: var(--muted); font-size: 12px; word-break: break-all; }
+.redir button { min-height: 28px; margin-left: 6px; }
 button.enter {
   min-height: 48px;
   padding: 0 16px;

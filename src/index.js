@@ -56,7 +56,15 @@ server.listen(port, host, () => {
   console.log(`Все чаты: ${dock}`);
   console.log(`Экран:    http://${host}:${port}/overlay`);
   console.log(`Вход:     http://${host}:${port}/settings`);
-  console.log("сборка dock-fit");
+  console.log("сборка account-mod");
+  const saved = store.get();
+  const names = [
+    saved.twitch.channel && `Twitch ${saved.twitch.channel}`,
+    (saved.youtube.handle || saved.youtube.channelId || saved.youtube.videoId) && `YouTube ${saved.youtube.handle || saved.youtube.channelId || saved.youtube.videoId}`,
+    saved.kick.channel && `Kick ${saved.kick.channel}`,
+    saved.vk.channel && `VK ${saved.vk.channel}`,
+  ].filter(Boolean);
+  console.log(names.length ? `Настройки на месте: ${names.join(", ")}` : "Настройки пока пустые. Ссылки вводятся на странице Старт и больше не стираются.");
   connectors.start();
   if (!process.env.NO_OPEN) {
     const config = store.get();

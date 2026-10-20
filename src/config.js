@@ -85,23 +85,32 @@ const SECRET_KEYS = new Set([
   "cookies",
 ]);
 
+function readJsonFile(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
 export function createConfigStore(filePath) {
   function read() {
     const base = defaultConfig();
-    if (!fs.existsSync(filePath)) return base;
-    try {
-      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
-      return mergeConfig(base, parsed);
-    } catch {
-      return base;
-    }
+    const parsed = readJsonFile(filePath) || readJsonFile(`${filePath}.bak`);
+    return parsed ? mergeConfig(base, parsed) : base;
   }
 
   let current = read();
 
   function write(next) {
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+    const dir = path.dirname(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+    const body = `${JSON.stringify(next, null, 2)}\n`;
+    const tmp = `${filePath}.${process.pid}.tmp`;
+    fs.writeFileSync(tmp, body, "utf8");
+    if (fs.existsSync(filePath)) fs.copyFileSync(filePath, `${filePath}.bak`);
+    fs.renameSync(tmp, filePath);
     current = next;
   }
 

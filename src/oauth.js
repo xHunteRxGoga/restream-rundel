@@ -15,7 +15,7 @@ export function startUrl(platform, config) {
     url.searchParams.set("client_id", config.twitch.clientId);
     url.searchParams.set("redirect_uri", uri);
     url.searchParams.set("response_type", "token");
-    url.searchParams.set("scope", "chat:read chat:edit");
+    url.searchParams.set("scope", "chat:read chat:edit moderator:manage:banned_users");
     return { url };
   }
   if (platform === "youtube") {
@@ -44,7 +44,7 @@ export function startUrl(platform, config) {
     url.searchParams.set("response_type", "code");
     url.searchParams.set("client_id", config.kick.clientId);
     url.searchParams.set("redirect_uri", uri);
-    url.searchParams.set("scope", "user:read chat:write channel:read");
+    url.searchParams.set("scope", "user:read chat:write channel:read moderation:ban");
     url.searchParams.set("code_challenge", challenge);
     url.searchParams.set("code_challenge_method", "S256");
     url.searchParams.set("state", state);

@@ -11,8 +11,8 @@ document.getElementById("connect").addEventListener("click", connect);
 for (const platform of ["twitch", "youtube", "kick", "vk"]) {
   document.getElementById(`link-${platform}`).value = savedLink(platform, config);
   document.getElementById(`app-${platform}`).value = config[platform].clientId || "";
-  document.getElementById(`redir-${platform}`).textContent = `${origin}/oauth/${platform}`;
-  document.getElementById(`copy-redir-${platform}`).addEventListener("click", () => copy(`${origin}/oauth/${platform}`, `copy-redir-${platform}`));
+  document.getElementById(`redir-${platform}`).textContent = redirectFor(platform);
+  document.getElementById(`copy-redir-${platform}`).addEventListener("click", () => copy(redirectFor(platform), `copy-redir-${platform}`));
   document.getElementById(`allow-${platform}`).addEventListener("click", () => allow(platform));
   document.getElementById(`auth-${platform}`).textContent = hasAccess(platform, config)
     ? "Доступ есть. Можно писать, мутить и банить."
@@ -66,6 +66,12 @@ async function connect() {
     button.disabled = false;
     button.textContent = "Подключить чаты";
   }
+}
+
+function redirectFor(platform) {
+  const port = location.port || "3921";
+  const host = platform === "twitch" ? "localhost" : "127.0.0.1";
+  return `http://${host}:${port}/oauth/${platform}`;
 }
 
 function value(platform) {

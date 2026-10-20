@@ -4,7 +4,8 @@ const kickStates = new Map();
 
 export function redirectUri(platform) {
   const port = Number(process.env.PORT) || 3921;
-  return `http://127.0.0.1:${port}/oauth/${platform}`;
+  const host = platform === "twitch" ? "localhost" : "127.0.0.1";
+  return `http://${host}:${port}/oauth/${platform}`;
 }
 
 export function startUrl(platform, config) {

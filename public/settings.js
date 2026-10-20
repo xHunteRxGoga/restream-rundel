@@ -69,9 +69,7 @@ async function connect() {
 }
 
 function redirectFor(platform) {
-  const port = location.port || "3921";
-  const host = platform === "twitch" ? "localhost" : "127.0.0.1";
-  return `http://${host}:${port}/oauth/${platform}`;
+  return `${location.origin}/oauth/${platform}`;
 }
 
 function value(platform) {

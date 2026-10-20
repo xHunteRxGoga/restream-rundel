@@ -4,7 +4,8 @@ import path from "node:path";
 import { createServer } from "node:http";
 import { WebSocketServer } from "ws";
 import { PLATFORMS } from "./platforms.js";
-import { slug, sanitizeLook } from "./config.js";
+import { sanitizeLook } from "./config.js";
+import { streamsFromInput } from "./stream-link.js";
 import { personKey } from "./hub.js";
 import { bridgePage, exchangeCode, implicitPatch, redirectUri, startUrl } from "./oauth.js";
 import { finishLogin } from "./browser-login.js";
@@ -189,10 +190,13 @@ function redirectMap() {
 
 function normalizePatch(patch) {
   const next = { ...patch };
-  for (const platform of ["twitch", "kick", "vk"]) {
-    if (next[platform]?.channel) next[platform] = { ...next[platform], channel: slug(next[platform].channel) };
+  if (next.streams) {
+    const parsed = streamsFromInput(next.streams);
+    for (const platform of ["twitch", "youtube", "kick", "vk"]) {
+      next[platform] = { ...(next[platform] || {}), ...parsed[platform] };
+    }
+    delete next.streams;
   }
-  if (next.youtube?.handle) next.youtube = { ...next.youtube, handle: slug(next.youtube.handle) };
   return next;
 }
 

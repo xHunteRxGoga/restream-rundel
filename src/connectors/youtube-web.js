@@ -55,11 +55,20 @@ export function readYouTubeActions(json) {
   };
 }
 
-export async function runYouTubeSite({ cookies, channelId, handle, hub, setStatus, alive, session }) {
-  if (!channelId && !handle) throw new Error("YouTube: впиши ник канала");
+export async function runYouTubeSite({ cookies, channelId, handle, videoId, hub, setStatus, alive, session }) {
+  if (!channelId && !handle && !videoId) throw new Error("YouTube: ссылка не задана");
+  let currentChannel = channelId || "";
+  let currentHandle = String(handle || "").replace(/^@/, "");
+  let currentVideo = videoId || "";
   session.cookies = cookies || [];
   while (alive()) {
-    const page = await loadLivePage(session.cookies, channelId, handle);
+    const page = await loadLivePage(session.cookies, {
+      channelId: currentChannel,
+      handle: currentHandle,
+      videoId: currentVideo,
+    });
+    if (page?.channelId) currentChannel = page.channelId;
+    if (page?.handle) currentHandle = page.handle;
     if (!page?.isLive) {
       setStatus("youtube", "connecting", "эфира на YouTube нет, жду");
       await sleep(15000);
@@ -112,10 +121,12 @@ export async function sendYouTubeSite(text, session) {
   return { ok: true };
 }
 
-async function loadLivePage(cookies, channelId, handle) {
+async function loadLivePage(cookies, { channelId, handle, videoId }) {
   const url = channelId
     ? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}/live`
-    : `https://www.youtube.com/@${encodeURIComponent(handle)}/live`;
+    : handle
+      ? `https://www.youtube.com/@${encodeURIComponent(handle)}/live`
+      : `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
   const response = await fetch(url, {
     headers: {
       cookie: cookieHeader(cookies),
@@ -125,7 +136,12 @@ async function loadLivePage(cookies, channelId, handle) {
     redirect: "follow",
   });
   const html = await response.text();
-  return parseYouTubeLivePage(html, response.url);
+  const page = parseYouTubeLivePage(html, response.url);
+  page.channelId = html.match(/"channelId":"(UC[\w-]{20,})"/)?.[1] || "";
+  page.handle = html.match(/"canonicalBaseUrl":"\/@([^"]+)"/)?.[1]
+    || html.match(/youtube\.com\/@([\w.-]+)/)?.[1]
+    || "";
+  return page;
 }
 
 function youtubeHeaders(cookies, clientVersion) {

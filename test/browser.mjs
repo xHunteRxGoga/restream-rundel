@@ -85,7 +85,7 @@ try {
   const settings = await browser.newPage({ viewport: { width: 900, height: 900 } });
   await settings.goto(`http://127.0.0.1:${port}/settings`);
   await settings.getByRole("heading", { name: "Старт" }).waitFor();
-  await settings.getByRole("button", { name: "Войти через Twitch" }).waitFor();
+  await settings.getByRole("button", { name: "Подключить чаты" }).waitFor();
   await settings.getByText("Пользовательские доки браузера").waitFor();
   const settingsText = await settings.locator("body").innerText();
   if (settingsText.includes("Client ID")) throw new Error("На старте опять просят Client ID");

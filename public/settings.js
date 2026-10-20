@@ -4,44 +4,78 @@ const dockUrl = `${origin}/dock`;
 const overlayUrl = `${origin}/overlay`;
 document.getElementById("url-dock").textContent = dockUrl;
 document.getElementById("url-overlay").textContent = overlayUrl;
-
 document.getElementById("copy-dock").addEventListener("click", () => copy(dockUrl, "copy-dock"));
 document.getElementById("copy-overlay").addEventListener("click", () => copy(overlayUrl, "copy-overlay"));
+document.getElementById("connect").addEventListener("click", connect);
+
 for (const platform of ["twitch", "youtube", "kick", "vk"]) {
-  document.getElementById(`login-${platform}`).addEventListener("click", () => login(platform));
-  const who = document.getElementById(`who-${platform}`);
-  const name = accountName(platform, config);
-  who.textContent = name ? `Вошёл: ${name}` : "Ещё не вошёл";
+  document.getElementById(`link-${platform}`).value = savedLink(platform, config);
 }
 
-async function login(platform) {
-  const button = document.getElementById(`login-${platform}`);
-  const previous = button.textContent;
+const statuses = {};
+paint();
+const socket = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`);
+socket.addEventListener("message", (event) => {
+  const data = JSON.parse(event.data);
+  if (data.statuses) Object.assign(statuses, data.statuses);
+  if (data.type === "status") statuses[data.platform] = { state: data.state, detail: data.detail };
+  paint();
+});
+
+async function connect() {
+  const button = document.getElementById("connect");
   button.disabled = true;
-  button.textContent = "Подключаю аккаунт...";
-  banner("Откроется вкладка в том браузере, где ты уже сидишь в аккаунте. Подожди, страницу не закрывай.");
+  button.textContent = "Подключаю...";
+  banner("Ищу эфиры. Сообщения появятся в доке, когда стрим уже идёт.");
   try {
-    const response = await fetch(`/api/login/${platform}`, { method: "POST" });
+    const response = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        streams: {
+          twitch: value("twitch"),
+          youtube: value("youtube"),
+          kick: value("kick"),
+          vk: value("vk"),
+        },
+      }),
+    });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) {
-      banner(body.error || "Вход не удался.");
-      button.disabled = false;
-      button.textContent = previous;
+      banner(body.error || "Не сохранилось.");
       return;
     }
-    location.reload();
+    banner("Ссылки сохранены. Если эфир уже идёт, чат появится в доке и на экране.");
   } catch {
     banner("Чат не ответил. Проверь, что чёрное окно start.bat ещё открыто.");
+  } finally {
     button.disabled = false;
-    button.textContent = previous;
+    button.textContent = "Подключить чаты";
   }
 }
 
-function accountName(platform, config) {
-  if (platform === "twitch") return config.twitch.login || config.twitch.channel || "";
-  if (platform === "youtube") return config.youtube.displayName || config.youtube.handle || "";
-  if (platform === "kick") return config.kick.channel || "";
-  return config.vk.displayName || config.vk.channel || "";
+function value(platform) {
+  return document.getElementById(`link-${platform}`).value.trim();
+}
+
+function savedLink(platform, source) {
+  if (platform === "twitch") return source.twitch.channel || "";
+  if (platform === "kick") return source.kick.channel || "";
+  if (platform === "vk") return source.vk.channel || "";
+  if (source.youtube.handle) return `@${source.youtube.handle}`;
+  return source.youtube.channelId || source.youtube.videoId || "";
+}
+
+function paint() {
+  for (const platform of ["twitch", "youtube", "kick", "vk"]) {
+    const status = statuses[platform];
+    const node = document.getElementById(`who-${platform}`);
+    if (!status) {
+      node.textContent = "жду ответ чата";
+      continue;
+    }
+    node.textContent = status.detail || (status.state === "live" ? "чат идёт" : "не подключено");
+  }
 }
 
 async function copy(text, id) {

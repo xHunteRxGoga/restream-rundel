@@ -10,6 +10,7 @@ import { vkTextFromBlocks } from "../src/connectors/vk.js";
 import crypto from "node:crypto";
 import { mergeConfig, defaultConfig, sanitizeLook } from "../src/config.js";
 import { decryptCookieValue, extractVkAuth } from "../src/yandex-profile.js";
+import { streamsFromInput } from "../src/stream-link.js";
 
 test("commands and known bots stay off the overlay", () => {
   assert.equal(hiddenOnOverlay({ text: "!song", author: "лера" }), true);
@@ -204,4 +205,21 @@ test("an empty secret does not wipe a saved token", () => {
   const next = mergeConfig(saved, { twitch: { oauthToken: "", channel: "MyChannel" } });
   assert.equal(next.twitch.oauthToken, "secret-token");
   assert.equal(next.twitch.channel, "MyChannel");
+});
+
+test("a stream link becomes the channel that chat should read", () => {
+  const parsed = streamsFromInput({
+    twitch: "https://www.twitch.tv/popout/Goga/chat",
+    youtube: "https://www.youtube.com/@GogaLive/live",
+    kick: "https://kick.com/goga",
+    vk: "https://live.vkvideo.ru/goga",
+  });
+  assert.equal(parsed.twitch.channel, "goga");
+  assert.equal(parsed.youtube.handle, "GogaLive");
+  assert.equal(parsed.youtube.videoId, "");
+  assert.equal(parsed.kick.channel, "goga");
+  assert.equal(parsed.vk.channel, "goga");
+  const video = streamsFromInput({ youtube: "https://youtu.be/dQw4w9wgxcQ" });
+  assert.equal(video.youtube.videoId, "dQw4w9wgxcQ");
+  assert.equal(video.youtube.handle, "");
 });

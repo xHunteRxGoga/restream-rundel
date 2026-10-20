@@ -47,6 +47,7 @@ export function defaultConfig() {
       displayName: "",
       channelId: "",
       handle: "",
+      videoId: "",
       cookies: "",
     },
     kick: {

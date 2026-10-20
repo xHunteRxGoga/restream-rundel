@@ -56,12 +56,12 @@ server.listen(port, host, () => {
   console.log(`Все чаты: ${dock}`);
   console.log(`Экран:    http://${host}:${port}/overlay`);
   console.log(`Вход:     http://${host}:${port}/settings`);
-  console.log("Окно входа открывается в Яндекс Браузере.");
+  console.log("сборка stream-links");
   connectors.start();
   if (!process.env.NO_OPEN) {
     const config = store.get();
     const signedIn = config.twitch.channel || config.twitch.oauthToken
-      || config.youtube.handle || config.youtube.channelId || config.youtube.cookies || config.youtube.refreshToken
+      || config.youtube.handle || config.youtube.channelId || config.youtube.videoId || config.youtube.cookies || config.youtube.refreshToken
       || config.kick.channel || config.kick.cookies || config.kick.accessToken
       || config.vk.channel || config.vk.accessToken;
     const target = signedIn ? dock : `http://${host}:${port}/settings`;

@@ -10,12 +10,14 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
       const gen = ++generation;
       const youtube = getConfig().youtube;
       const handle = String(youtube.handle || "").replace(/^@/, "");
-      if (youtube.cookies || youtube.channelId || handle) {
+      const videoId = String(youtube.videoId || "");
+      if (youtube.cookies || youtube.channelId || handle || videoId) {
         try {
           await runYouTubeSite({
             cookies: youtube.cookies ? JSON.parse(youtube.cookies) : [],
             channelId: youtube.channelId,
             handle,
+            videoId,
             hub,
             setStatus,
             alive: () => gen === generation,
@@ -31,7 +33,7 @@ export function createYouTubeConnector({ hub, learn, getConfig, setStatus }) {
         return;
       }
       if (!youtube.refreshToken && !youtube.accessToken) {
-        setStatus("youtube", "off", "впиши ник канала");
+        setStatus("youtube", "off", "ссылка не задана");
         return;
       }
       setStatus("youtube", "connecting", "ищу эфир");

@@ -42,7 +42,7 @@ export function createKickConnector({ hub, learn, getConfig, setStatus }) {
       const kick = getConfig().kick;
       const channel = kick.channel;
       if (!channel && !kick.chatroomId) {
-        setStatus("kick", "off", "впиши ник канала");
+        setStatus("kick", "off", "ссылка не задана");
         return;
       }
       setStatus("kick", "connecting", "подключаюсь");

@@ -10,8 +10,8 @@
   <header class="top">
     <div>
       <h1>Старт</h1>
-      <p class="lede">Войди через тот браузер, где уже есть аккаунты. Яндекс, Chrome или Edge, без разницы.</p>
-      <p class="hint">сборка any-browser</p>
+      <p class="lede">Вставь ссылку на канал или на текущий эфир. Чат подключится сам, пока стрим идёт.</p>
+      <p class="hint">сборка stream-links</p>
     </div>
     <a class="text-link" href="/look">Вид чата</a>
     <a class="text-link" href="/dock">К чату</a>
@@ -20,32 +20,35 @@
 
   <section class="patch twitch">
     <h2>Twitch</h2>
+    <label>Ссылка или ник
+      <input id="link-twitch" placeholder="https://www.twitch.tv/ник" autocomplete="off" spellcheck="false">
+    </label>
     <p class="who" id="who-twitch"></p>
-    <div class="actions">
-      <button class="enter" type="button" id="login-twitch">Войти через Twitch</button>
-    </div>
   </section>
   <section class="patch youtube">
     <h2>YouTube</h2>
+    <label>Ссылка на канал или на эфир
+      <input id="link-youtube" placeholder="https://www.youtube.com/@канал/live" autocomplete="off" spellcheck="false">
+    </label>
     <p class="who" id="who-youtube"></p>
-    <div class="actions">
-      <button class="enter" type="button" id="login-youtube">Войти через YouTube</button>
-    </div>
   </section>
   <section class="patch kick">
     <h2>Kick</h2>
+    <label>Ссылка или ник
+      <input id="link-kick" placeholder="https://kick.com/ник" autocomplete="off" spellcheck="false">
+    </label>
     <p class="who" id="who-kick"></p>
-    <div class="actions">
-      <button class="enter" type="button" id="login-kick">Войти через Kick</button>
-    </div>
   </section>
   <section class="patch vk">
     <h2>VK Видео</h2>
+    <label>Ссылка или ник
+      <input id="link-vk" placeholder="https://live.vkvideo.ru/ник" autocomplete="off" spellcheck="false">
+    </label>
     <p class="who" id="who-vk"></p>
-    <div class="actions">
-      <button class="enter" type="button" id="login-vk">Войти через VK</button>
-    </div>
   </section>
+  <div class="actions">
+    <button class="enter" type="button" id="connect">Подключить чаты</button>
+  </div>
 
   <section class="obs">
     <h2>Куда вставить в OBS</h2>

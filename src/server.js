@@ -192,6 +192,7 @@ function normalizePatch(patch) {
   for (const platform of ["twitch", "kick", "vk"]) {
     if (next[platform]?.channel) next[platform] = { ...next[platform], channel: slug(next[platform].channel) };
   }
+  if (next.youtube?.handle) next.youtube = { ...next.youtube, handle: slug(next.youtube.handle) };
   return next;
 }
 

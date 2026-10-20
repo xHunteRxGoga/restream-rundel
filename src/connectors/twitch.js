@@ -143,32 +143,38 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
       const twitch = getConfig().twitch;
       const channel = (twitch.channel || twitch.login || "").replace(/^#/, "").toLowerCase();
       const token = cleanToken(twitch.oauthToken);
-      if (!channel || !token) {
-        setStatus("twitch", "off", "Войди через Twitch");
+      if (!channel) {
+        setStatus("twitch", "off", "впиши ник канала");
         return;
       }
 
-      setStatus("twitch", "connecting", "подключаюсь");
-      try {
-        await identify();
-      } catch (error) {
-        if (gen !== generation) return;
-        setStatus("twitch", "error", error.message);
-        setTimeout(() => {
-          if (gen === generation) this.start();
-        }, 8000);
-        return;
+      setStatus("twitch", "connecting", token ? "подключаюсь" : "читаю чат трансляции");
+      if (token) {
+        try {
+          await identify();
+        } catch (error) {
+          if (gen !== generation) return;
+          setStatus("twitch", "error", error.message);
+          setTimeout(() => {
+            if (gen === generation) this.start();
+          }, 8000);
+          return;
+        }
       }
       if (gen !== generation) return;
 
       const WebSocket = (await import("ws")).default;
       const ws = new WebSocket("wss://irc-ws.chat.twitch.tv:443");
       socket = ws;
+      const nick = token
+        ? (getConfig().twitch.login || channel).toLowerCase()
+        : `justinfan${Math.floor(10000 + Math.random() * 89999)}`;
       ws.on("open", () => {
         if (gen !== generation) return;
         ws.send("CAP REQ :twitch.tv/tags twitch.tv/commands");
-        ws.send(`PASS oauth:${token}`);
-        ws.send(`NICK ${(getConfig().twitch.login || channel).toLowerCase()}`);
+        if (token) ws.send(`PASS oauth:${token}`);
+        else ws.send("PASS SCHMOOPIIE");
+        ws.send(`NICK ${nick}`);
         ws.send(`JOIN #${channel}`);
       });
       ws.on("message", (data) => {
@@ -217,6 +223,9 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
     },
     async send(text) {
       const channel = (getConfig().twitch.channel || getConfig().twitch.login || "").replace(/^#/, "").toLowerCase();
+      if (!cleanToken(getConfig().twitch.oauthToken)) {
+        return { ok: false, error: "чат Twitch читается, ответить из гостя нельзя" };
+      }
       if (!socket || socket.readyState !== 1 || !channel) {
         return { ok: false, error: "Twitch не подключён" };
       }

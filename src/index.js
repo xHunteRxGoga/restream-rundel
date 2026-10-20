@@ -60,8 +60,10 @@ server.listen(port, host, () => {
   connectors.start();
   if (!process.env.NO_OPEN) {
     const config = store.get();
-    const signedIn = config.twitch.oauthToken || config.youtube.cookies || config.youtube.refreshToken
-      || config.kick.cookies || config.kick.accessToken || config.vk.accessToken;
+    const signedIn = config.twitch.channel || config.twitch.oauthToken
+      || config.youtube.handle || config.youtube.channelId || config.youtube.cookies || config.youtube.refreshToken
+      || config.kick.channel || config.kick.cookies || config.kick.accessToken
+      || config.vk.channel || config.vk.accessToken;
     const target = signedIn ? dock : `http://${host}:${port}/settings`;
     spawn("cmd", ["/c", "start", "", target], { detached: true, stdio: "ignore", windowsHide: true }).unref();
   }

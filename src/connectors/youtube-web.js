@@ -55,11 +55,11 @@ export function readYouTubeActions(json) {
   };
 }
 
-export async function runYouTubeSite({ cookies, channelId, hub, setStatus, alive, session }) {
-  if (!channelId) throw new Error("YouTube не показал канал. Войди ещё раз.");
-  session.cookies = cookies;
+export async function runYouTubeSite({ cookies, channelId, handle, hub, setStatus, alive, session }) {
+  if (!channelId && !handle) throw new Error("YouTube: впиши ник канала");
+  session.cookies = cookies || [];
   while (alive()) {
-    const page = await loadLivePage(cookies, channelId);
+    const page = await loadLivePage(session.cookies, channelId, handle);
     if (!page?.isLive) {
       setStatus("youtube", "connecting", "эфира на YouTube нет, жду");
       await sleep(15000);
@@ -78,7 +78,7 @@ export async function runYouTubeSite({ cookies, channelId, hub, setStatus, alive
           continuation,
         }),
       });
-      if (response.status === 401 || response.status === 403) {
+      if ((response.status === 401 || response.status === 403) && session.cookies?.length) {
         throw new Error("Сессия YouTube кончилась. Войди ещё раз.");
       }
       if (!response.ok) break;
@@ -112,8 +112,11 @@ export async function sendYouTubeSite(text, session) {
   return { ok: true };
 }
 
-async function loadLivePage(cookies, channelId) {
-  const response = await fetch(`https://www.youtube.com/channel/${encodeURIComponent(channelId)}/live`, {
+async function loadLivePage(cookies, channelId, handle) {
+  const url = channelId
+    ? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}/live`
+    : `https://www.youtube.com/@${encodeURIComponent(handle)}/live`;
+  const response = await fetch(url, {
     headers: {
       cookie: cookieHeader(cookies),
       "user-agent": AGENT,

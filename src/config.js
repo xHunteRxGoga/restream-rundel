@@ -46,6 +46,7 @@ export function defaultConfig() {
       expiresAt: 0,
       displayName: "",
       channelId: "",
+      handle: "",
       cookies: "",
     },
     kick: {

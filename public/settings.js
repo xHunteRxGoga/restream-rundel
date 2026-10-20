@@ -5,51 +5,39 @@ const overlayUrl = `${origin}/overlay`;
 document.getElementById("url-dock").textContent = dockUrl;
 document.getElementById("url-overlay").textContent = overlayUrl;
 
-showWho("twitch", config.twitch.oauthToken ? config.twitch.login || "вошёл" : "");
-showWho("youtube", config.youtube.cookies || config.youtube.refreshToken ? "вошёл" : "");
-showWho("kick", config.kick.cookies || config.kick.accessToken ? config.kick.channel || "вошёл" : "");
-showWho("vk", config.vk.accessToken ? config.vk.displayName || config.vk.channel || "вошёл" : "");
+document.getElementById("twitch-channel").value = config.twitch.channel || "";
+document.getElementById("youtube-handle").value = config.youtube.handle || "";
+document.getElementById("kick-channel").value = config.kick.channel || "";
+document.getElementById("vk-channel").value = config.vk.channel || "";
 
 document.getElementById("copy-dock").addEventListener("click", () => copy(dockUrl, "copy-dock"));
 document.getElementById("copy-overlay").addEventListener("click", () => copy(overlayUrl, "copy-overlay"));
+document.getElementById("connect").addEventListener("click", connect);
 
-for (const platform of ["twitch", "youtube", "kick", "vk"]) {
-  document.getElementById(`login-${platform}`).addEventListener("click", () => login(platform));
-}
-
-for (const button of document.querySelectorAll("[data-clear]")) {
-  button.addEventListener("click", () => logout(button.dataset.clear.split(",")));
-}
-
-async function login(platform) {
-  const button = document.getElementById(`login-${platform}`);
-  const previous = button.textContent;
+async function connect() {
+  const button = document.getElementById("connect");
   button.disabled = true;
-  button.textContent = "Открываю Яндекс...";
-  banner("Яндекс на секунду закроется и откроется снова с твоими аккаунтами. Чат заберёт вход сам.");
+  button.textContent = "Подключаю...";
   try {
-    const response = await fetch(`/api/login/${platform}`, { method: "POST" });
-    const body = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      banner(body.error || "Вход не удался.");
-      button.disabled = false;
-      button.textContent = previous;
-      return;
-    }
-    location.reload();
+    const response = await fetch("/api/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        twitch: { channel: value("twitch-channel") },
+        youtube: { handle: value("youtube-handle") },
+        kick: { channel: value("kick-channel") },
+        vk: { channel: value("vk-channel") },
+      }),
+    });
+    if (!response.ok) throw new Error("Не сохранилось");
+    banner("Ники сохранены. Чат трансляции подключается. Открой «К чату».");
+    button.textContent = "Подключить чаты";
   } catch {
     banner("Чат не ответил. Проверь, что чёрное окно start.bat ещё открыто.");
+    button.textContent = "Подключить чаты";
+  } finally {
     button.disabled = false;
   }
-}
-
-async function logout(clear) {
-  const response = await fetch("/api/config", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ clear }),
-  });
-  if (response.ok) location.reload();
 }
 
 async function copy(text, id) {
@@ -62,9 +50,8 @@ async function copy(text, id) {
   }, 1500);
 }
 
-function showWho(platform, name) {
-  const node = document.getElementById(`who-${platform}`);
-  node.textContent = name ? `Вошёл: ${name}` : "Ещё не вошёл";
+function value(id) {
+  return document.getElementById(id).value.trim();
 }
 
 function banner(text) {

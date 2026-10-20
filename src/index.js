@@ -56,7 +56,7 @@ server.listen(port, host, () => {
   console.log(`Все чаты: ${dock}`);
   console.log(`Экран:    http://${host}:${port}/overlay`);
   console.log(`Вход:     http://${host}:${port}/settings`);
-  console.log("сборка ladder");
+  console.log("сборка names");
   const saved = store.get();
   const names = [
     saved.twitch.channel && `Twitch ${saved.twitch.channel}`,

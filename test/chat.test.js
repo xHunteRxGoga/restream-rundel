@@ -130,9 +130,32 @@ test("an alias renames a person on screen and still hides the original bot nick"
     text: "йо",
   });
   assert.equal(viewer.displayAuthor, "keks");
-  hub.setAliases({ "twitch:id:5": "Кекс" });
+  hub.setAliases({ [viewer.personKey]: "Кекс" });
   assert.equal(hub.history().find((item) => item.id === viewer.id).displayAuthor, "Кекс");
   assert.equal(hub.history().find((item) => item.id === bot.id).displayAuthor, "Nightbot");
+});
+
+test("one renamed person does not rename everyone who shares an id", () => {
+  const hub = createHub();
+  const gosha = hub.ingest({
+    platform: "youtube",
+    platformMessageId: "1",
+    author: "Гоша",
+    authorId: "UC-same",
+    text: "раз",
+  });
+  const akim = hub.ingest({
+    platform: "youtube",
+    platformMessageId: "2",
+    author: "Аким",
+    authorId: "UC-same",
+    text: "два",
+  });
+  hub.setAliases({ [gosha.personKey]: "Админ" });
+  assert.equal(gosha.displayAuthor, "Админ");
+  assert.equal(gosha.author, "Гоша");
+  assert.equal(akim.displayAuthor, "Аким");
+  assert.equal(akim.author, "Аким");
 });
 
 test("youtube page gives the chat continuation and a stable login hash", () => {

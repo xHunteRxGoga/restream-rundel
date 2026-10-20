@@ -6,7 +6,7 @@ const META = {
   local: { short: "ВСЕ", color: "#f3efe6" },
 };
 
-const mode = document.body.dataset.mode;
+const mode = document.body.dataset.mode || (document.body.classList.contains("overlay") ? "overlay" : "dock");
 const preview = new URLSearchParams(location.search).has("preview");
 const log = document.getElementById("log");
 const rows = new Map();
@@ -86,7 +86,19 @@ function removeMessages(ids) {
 
 function upsert(message) {
   if (!message) return;
+  const previous = byId.get(message.id);
   byId.set(message.id, message);
+  if (
+    mode === "overlay" &&
+    previous &&
+    previous.author === message.author &&
+    previous.text === message.text &&
+    previous.safeHtml === message.safeHtml &&
+    previous.overlay === message.overlay &&
+    previous.avatar === message.avatar
+  ) {
+    return;
+  }
   if (mode === "overlay" && !message.overlay) {
     rows.get(message.id)?.remove();
     rows.delete(message.id);

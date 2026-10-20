@@ -5,8 +5,8 @@ import { avatarUrlAllowed, renderSafeHtml } from "./render.js";
 const MAX_MESSAGES = 400;
 
 export function personKey(platform, authorId, author) {
-  if (authorId) return `${platform}:id:${authorId}`;
-  return `${platform}:name:${String(author ?? "").trim().toLowerCase()}`;
+  const name = String(author ?? "").trim().toLowerCase();
+  return `${platform}:name:${name}`;
 }
 
 export function createHub() {

@@ -49,13 +49,14 @@ const server = createApp({
 });
 
 const port = Number(process.env.PORT) || 3921;
-const host = "127.0.0.1";
+const host = process.env.HOST || "127.0.0.1";
+const advertised = process.env.PUBLIC_HOST || host;
 
 server.listen(port, host, () => {
-  const dock = `http://${host}:${port}/dock`;
+  const dock = `http://${advertised}:${port}/dock`;
   console.log(`Все чаты: ${dock}`);
-  console.log(`Экран:    http://${host}:${port}/overlay`);
-  console.log(`Вход:     http://${host}:${port}/settings`);
+  console.log(`Экран:    http://${advertised}:${port}/overlay`);
+  console.log(`Вход:     http://${advertised}:${port}/settings`);
   console.log("сборка names");
   const saved = store.get();
   const names = [

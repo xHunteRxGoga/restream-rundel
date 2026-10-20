@@ -10,8 +10,8 @@
   <header class="top">
     <div>
       <h1>Старт</h1>
-      <p class="lede">Впиши ники каналов. Сервер сам читает чат трансляции, браузер для входа не нужен.</p>
-      <p class="hint">сборка nick-chat</p>
+      <p class="lede">Войди в аккаунт. Яндекс на секунду закроется и откроется снова, чат трансляции подключится сам.</p>
+      <p class="hint">сборка login-cdp</p>
     </div>
     <a class="text-link" href="/look">Вид чата</a>
     <a class="text-link" href="/dock">К чату</a>
@@ -20,27 +20,32 @@
 
   <section class="patch twitch">
     <h2>Twitch</h2>
-    <label>Ник канала <input id="twitch-channel" placeholder="ник из twitch.tv/ник" autocomplete="off"></label>
     <p class="who" id="who-twitch"></p>
+    <div class="actions">
+      <button class="enter" type="button" id="login-twitch">Войти через Twitch</button>
+    </div>
   </section>
   <section class="patch youtube">
     <h2>YouTube</h2>
-    <label>Ник канала <input id="youtube-handle" placeholder="ник из youtube.com/@ник" autocomplete="off"></label>
     <p class="who" id="who-youtube"></p>
+    <div class="actions">
+      <button class="enter" type="button" id="login-youtube">Войти через YouTube</button>
+    </div>
   </section>
   <section class="patch kick">
     <h2>Kick</h2>
-    <label>Ник канала <input id="kick-channel" placeholder="ник из kick.com/ник" autocomplete="off"></label>
     <p class="who" id="who-kick"></p>
+    <div class="actions">
+      <button class="enter" type="button" id="login-kick">Войти через Kick</button>
+    </div>
   </section>
   <section class="patch vk">
     <h2>VK Видео</h2>
-    <label>Ник канала <input id="vk-channel" placeholder="ник из live.vkvideo.ru/ник" autocomplete="off"></label>
     <p class="who" id="who-vk"></p>
+    <div class="actions">
+      <button class="enter" type="button" id="login-vk">Войти через VK</button>
+    </div>
   </section>
-  <div class="actions">
-    <button class="enter" type="button" id="connect">Подключить чаты</button>
-  </div>
 
   <section class="obs">
     <h2>Куда вставить в OBS</h2>

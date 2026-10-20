@@ -63,6 +63,7 @@ function collectYouTubeAction(action, messages) {
     authorId: renderer.authorExternalChannelId || "",
     text: parts.text,
     emotes: parts.emotes,
+    avatar: youtubeAvatar(renderer),
   });
 }
 
@@ -97,6 +98,12 @@ export function youtubeRuns(runs) {
       .map((emote) => ({ ...emote, start: emote.start - leading, end: emote.end - leading }))
       .filter((emote) => emote.start >= 0 && emote.end <= trimmed.length),
   };
+}
+
+function youtubeAvatar(renderer) {
+  const thumbs = renderer?.authorPhoto?.thumbnails || [];
+  const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+  return best?.url || "";
 }
 
 function emojiImage(emoji) {

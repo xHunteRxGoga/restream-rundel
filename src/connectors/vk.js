@@ -160,6 +160,7 @@ export function createVkConnector({ hub, learn, getConfig, setStatus }) {
         authorId: body.author?.id ? String(body.author.id) : "",
         text,
         emotes,
+        avatar: body.author?.avatarUrl || body.author?.avatar || body.author?.photoUrl || body.author?.photo || "",
         at: body.createdAt ? Date.parse(body.createdAt) || Date.now() : Date.now(),
       });
     });

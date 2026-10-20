@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { hiddenOnOverlay, DEFAULT_BOTS } from "./filter.js";
-import { renderSafeHtml } from "./render.js";
+import { avatarUrlAllowed, renderSafeHtml } from "./render.js";
 
 const MAX_MESSAGES = 400;
 
@@ -64,6 +64,7 @@ export function createHub() {
       authorId: input.authorId ? String(input.authorId) : "",
       personKey: personKey(input.platform, input.authorId, author),
       displayAuthor: aliases[personKey(input.platform, input.authorId, author)] || author,
+      avatar: avatarUrlAllowed(input.avatar) ? String(input.avatar) : "",
       text,
       safeHtml: renderSafeHtml(text, input.emotes),
       color: input.color || null,
@@ -96,6 +97,18 @@ export function createHub() {
         const next = aliases[message.personKey] || message.author;
         if (next === message.displayAuthor) continue;
         message.displayAuthor = next;
+        update(message);
+      }
+    },
+    setAvatar(platform, authorId, author, url) {
+      if (!avatarUrlAllowed(url)) return;
+      const key = personKey(platform, authorId, author);
+      const name = String(author || "").trim().toLowerCase();
+      for (const message of messages) {
+        if (message.platform !== platform) continue;
+        const same = message.personKey === key || (name && message.author.trim().toLowerCase() === name);
+        if (!same || message.avatar === url) continue;
+        message.avatar = url;
         update(message);
       }
     },

@@ -1,3 +1,5 @@
+import { avatarUrlAllowed } from "../render.js";
+
 const TAG_ESCAPES = [
   [/\\:/g, ";"],
   [/\\s/g, " "],
@@ -120,6 +122,27 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
     socket = null;
   }
 
+  const avatarCache = new Map();
+
+  function attachTwitchAvatar(event) {
+    const login = String(event.author || "").trim().toLowerCase();
+    const known = login ? avatarCache.get(login) : "";
+    hub.ingest({ platform: "twitch", ...event, avatar: known || "" });
+    if (!login || avatarCache.has(login)) return;
+    avatarCache.set(login, "");
+    fetch(`https://api.ivr.fi/v2/twitch/user?login=${encodeURIComponent(login)}`, {
+      headers: { accept: "application/json" },
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        const logo = Array.isArray(json) ? json[0]?.logo : "";
+        if (!logo || !avatarUrlAllowed(logo)) return;
+        avatarCache.set(login, logo);
+        hub.setAvatar("twitch", event.authorId, event.author, logo);
+      })
+      .catch(() => {});
+  }
+
   async function identify() {
     const token = cleanToken(getConfig().twitch.oauthToken);
     if (!token) return;
@@ -204,7 +227,7 @@ export function createTwitchConnector({ hub, learn, getConfig, setStatus }) {
           }
           if (event.type === "message") {
             setStatus("twitch", "live", `#${channel}`);
-            hub.ingest({ platform: "twitch", ...event });
+            attachTwitchAvatar(event);
           }
         }
       });

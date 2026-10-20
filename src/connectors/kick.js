@@ -186,6 +186,7 @@ function kickMessage(payload) {
     authorId: sender.id ? String(sender.id) : "",
     text,
     color: sender.identity?.color || "",
+    avatar: sender.profile_picture || sender.profilepic || sender.identity?.profile_pic || sender.identity?.profile_picture || "",
     emotes,
     isBot: badges.some((badge) => String(badge.type || badge).toLowerCase() === "bot"),
   };

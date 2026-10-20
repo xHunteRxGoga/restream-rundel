@@ -50,18 +50,18 @@ try {
 
   await dock.locator("#text").fill("проверка связи");
   await dock.getByRole("button", { name: "Во все" }).click();
-  await dock.getByText("Twitch не подключён").waitFor();
+  await dock.getByText("из гостя нельзя").waitFor();
   await dock.getByText("не на экране").nth(2).waitFor();
   const ownOnOverlay = await overlay.getByText("проверка связи").count();
   if (ownOnOverlay !== 0) throw new Error("На экран попало сообщение, которое никуда не ушло");
 
   await dock.getByRole("button", { name: "keks" }).click();
   await dock.locator("#nick-input").fill("Кекс");
-  await dock.getByRole("button", { name: "Сохранить ник" }).click();
-  await overlay.getByText("Кекс").waitFor();
+  await dock.getByRole("button", { name: "Ок" }).click();
   await dock.getByText("было keks").waitFor();
   const renamed = await overlay.locator("#log").innerText();
-  if (renamed.includes("keks")) throw new Error(`На экране остался старый ник:\n${renamed}`);
+  if (!renamed.toLowerCase().includes("keks")) throw new Error(`На экране пропал настоящий ник:\n${renamed}`);
+  if (renamed.includes("Кекс")) throw new Error(`На экране зрителей чужой ник:\n${renamed}`);
 
   await dock.getByRole("button", { name: "Убрать проверку" }).click();
   await dock.getByText("привет с твича").waitFor({ state: "detached" });

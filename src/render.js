@@ -40,6 +40,10 @@ export function emoteUrlAllowed(url) {
   }
 }
 
+export function avatarUrlAllowed(url) {
+  return emoteUrlAllowed(url);
+}
+
 export function renderSafeHtml(text, emotes = []) {
   const source = String(text ?? "");
   const sorted = emotes

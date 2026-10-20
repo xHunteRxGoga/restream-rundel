@@ -15,6 +15,13 @@ let overlayLimit = 8;
 if (mode === "dock") buildLamps();
 
 const socket = connect();
+let pinned = true;
+if (mode === "dock") {
+  log.addEventListener("wheel", (event) => {
+    if (event.deltaY < 0) pinned = false;
+    else pinned = log.scrollHeight - log.scrollTop - log.clientHeight < 64;
+  }, { passive: true });
+}
 if (!preview) setInterval(() => { catchUp().catch(() => {}); }, 1000);
 if (mode === "overlay") {
   fitFrame();
@@ -54,6 +61,7 @@ function connect() {
     const data = JSON.parse(event.data);
     if (data.type === "snapshot") {
       rows.clear();
+      byId.clear();
       log.replaceChildren();
       if (mode === "dock") ensureEmpty();
       for (const message of data.messages) upsert(message);
@@ -81,6 +89,7 @@ function removeMessages(ids) {
 
 function upsert(message) {
   if (!message) return;
+  byId.set(message.id, message);
   if (mode === "overlay" && !message.overlay) {
     rows.get(message.id)?.remove();
     rows.delete(message.id);
@@ -113,16 +122,23 @@ function fill(row, message) {
   const plat = document.createElement("span");
   plat.className = "plat";
   plat.textContent = meta.short;
-  const author = document.createElement(mode === "dock" ? "button" : "span");
-  if (mode === "dock") author.type = "button";
-  author.className = "author";
-  author.textContent = message.displayAuthor || message.author;
-  author.style.color = usableColor(message.color, meta.color);
-  if (mode === "dock") author.addEventListener("click", () => openNick(message));
   const time = document.createElement("time");
   time.dateTime = new Date(message.at).toISOString();
   time.textContent = new Date(message.at).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  head.append(plat, author, time);
+  const shown = mode === "overlay" ? message.author : (message.displayAuthor || message.author);
+  head.append(avatarNode(message), plat);
+  if (mode === "dock" && editingKey === message.personKey) {
+    head.append(nickEditor(message));
+  } else {
+    const author = document.createElement(mode === "dock" ? "button" : "span");
+    if (mode === "dock") author.type = "button";
+    author.className = "author";
+    author.textContent = shown;
+    author.style.color = usableColor(message.color, meta.color);
+    if (mode === "dock") author.addEventListener("click", () => openNick(message));
+    head.append(author);
+  }
+  head.append(time);
   if (mode === "dock" && message.displayAuthor && message.displayAuthor !== message.author) {
     const was = document.createElement("span");
     was.className = "was";
@@ -183,7 +199,9 @@ function dropStrip(node) {
 
 function fitFrame() {
   const portrait = window.innerHeight > window.innerWidth;
+  const tight = window.innerHeight <= 220;
   document.body.dataset.frame = portrait ? "portrait" : "wide";
+  document.body.dataset.tight = tight ? "true" : "false";
   trimOverlay();
 }
 
@@ -246,8 +264,14 @@ function paintPreview() {
 }
 
 function stickToBottom() {
-  const distance = log.scrollHeight - log.scrollTop - log.clientHeight;
-  if (distance < 80) log.scrollTop = log.scrollHeight;
+  if (mode !== "dock" || !pinned) return;
+  const jump = () => {
+    log.scrollTop = log.scrollHeight;
+  };
+  jump();
+  requestAnimationFrame(jump);
+  setTimeout(jump, 60);
+  setTimeout(jump, 240);
 }
 
 function buildLamps() {
@@ -284,40 +308,90 @@ function ensureEmpty() {
   const empty = document.createElement("p");
   empty.className = "empty";
   empty.id = "empty";
-  empty.textContent = "Пока тихо. Сначала «Войти», потом «Проверить». Ник меняется кликом по имени.";
+  empty.textContent = "Пока тихо. Ник для себя меняется кликом по имени, на стриме он останется настоящим.";
   log.append(empty);
 }
 
-let editing = null;
+const byId = new Map();
+let editingKey = "";
 
-function openNick(message) {
-  editing = message;
-  const form = document.getElementById("nick");
-  form.hidden = false;
-  document.getElementById("nick-label").textContent = `Ник для ${message.author}`;
-  const input = document.getElementById("nick-input");
-  input.value = message.displayAuthor || message.author;
-  input.focus();
-  input.select();
+function avatarNode(message) {
+  const url = String(message.avatar || "");
+  if (/^https:\/\//.test(url)) {
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.alt = "";
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+    return img;
+  }
+  const letter = document.createElement("span");
+  letter.className = "avatar letter";
+  letter.textContent = String(message.author || "?").replace(/^@/, "").slice(0, 1).toUpperCase();
+  return letter;
 }
 
-document.getElementById("nick")?.addEventListener("submit", (event) => {
-  event.preventDefault();
-  saveNick(document.getElementById("nick-input").value);
-});
+function nickEditor(message) {
+  const form = document.createElement("form");
+  form.className = "nick-inline";
+  const input = document.createElement("input");
+  input.id = "nick-input";
+  input.maxLength = 40;
+  input.autocomplete = "off";
+  input.value = message.displayAuthor || message.author;
+  input.setAttribute("aria-label", `Ник для ${message.author}, только в этом окне`);
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.textContent = "Ок";
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "ghost";
+  reset.textContent = "Сброс";
+  const hint = document.createElement("span");
+  hint.className = "nick-hint";
+  hint.textContent = "на стриме не меняется";
+  reset.addEventListener("click", () => saveNick(""));
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveNick(input.value);
+  });
+  form.append(input, save, reset, hint);
+  queueMicrotask(() => {
+    input.focus();
+    input.select();
+  });
+  return form;
+}
 
-document.getElementById("nick-reset")?.addEventListener("click", () => saveNick(""));
+function openNick(message) {
+  const previous = editingKey;
+  editingKey = message.personKey;
+  if (previous && previous !== message.personKey) {
+    for (const stored of byId.values()) {
+      if (stored.personKey !== previous) continue;
+      const row = rows.get(stored.id);
+      if (row) fill(row, stored);
+    }
+  }
+  const row = rows.get(message.id);
+  if (row) fill(row, message);
+}
 
 async function saveNick(display) {
-  if (!editing) return;
+  const personKey = editingKey;
+  editingKey = "";
+  if (!personKey) return;
   const response = await fetch("/api/alias", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ personKey: editing.personKey, display }),
+    body: JSON.stringify({ personKey, display }),
   });
   if (!response.ok) return;
-  document.getElementById("nick").hidden = true;
-  editing = null;
+  for (const stored of byId.values()) {
+    if (stored.personKey !== personKey) continue;
+    const row = rows.get(stored.id);
+    if (row) fill(row, stored);
+  }
 }
 
 function usableColor(color, fallback) {

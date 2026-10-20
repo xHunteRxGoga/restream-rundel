@@ -47,12 +47,18 @@ a.text-link {
   flex: none;
 }
 
+html:has(body.dock) {
+  height: 100%;
+}
+
 body.dock {
-  height: 100vh;
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px;
+  overflow: hidden;
 }
 
 .top {
@@ -142,6 +148,7 @@ button.ghost {
   flex: 1;
   overflow: auto;
   min-height: 0;
+  overflow-anchor: none;
 }
 
 .empty {
@@ -167,8 +174,53 @@ button.ghost {
 
 .meta {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
+}
+
+.avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  background: #2a2e3a;
+}
+.avatar.letter {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.nick-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.nick-inline input {
+  width: 108px;
+  min-height: 28px;
+  padding: 2px 6px;
+}
+.nick-inline button[type="submit"] {
+  background: var(--text);
+  color: var(--ink);
+  border: 0;
+  min-height: 28px;
+  padding: 0 8px;
+}
+.nick-inline button.ghost {
+  background: transparent;
+  color: var(--muted);
+}
+.nick-hint {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .plat {
@@ -303,6 +355,41 @@ body.overlay[data-frame="portrait"] .author {
   font-size: calc(var(--name-size, 14px) * 0.9);
 }
 body.overlay[data-frame="portrait"] .meta { gap: 6px; }
+body.overlay[data-tight="true"] {
+  padding: 2px 4px;
+}
+body.overlay[data-tight="true"] .log { gap: 2px; }
+body.overlay[data-tight="true"] .strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 4px;
+}
+body.overlay[data-tight="true"] .meta {
+  flex: none;
+  gap: 4px;
+  max-width: 46%;
+}
+body.overlay[data-tight="true"] .text {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.overlay[data-tight="true"] .author,
+body.overlay[data-tight="true"] .plat {
+  font-size: 11px;
+}
+body.overlay[data-tight="true"] .avatar {
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+}
+body.overlay[data-tight="true"] time { display: none; }
 body.overlay .plat { font-size: calc(var(--name-size, 14px) - 2px); }
 body.overlay[data-show-platform="false"] .plat { display: none; }
 body.overlay[data-show-time="false"] time { display: none; }

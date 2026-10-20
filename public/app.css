@@ -23,6 +23,8 @@ html, body {
 html:has(body.overlay),
 body.overlay {
   background: transparent;
+  height: 100%;
+  overflow: hidden;
 }
 
 button, input, textarea {
@@ -256,18 +258,24 @@ time {
 
 body.overlay {
   background: transparent;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 12px;
+  overflow: hidden;
 }
 
 body.overlay .log {
   overflow: hidden;
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   justify-content: flex-end;
+  min-height: 0;
+  max-height: 100%;
   gap: var(--strip-gap, 6px);
 }
 body.overlay[data-align="top"] .log { justify-content: flex-start; }
@@ -278,6 +286,23 @@ body.overlay .strip {
 body.overlay .strip.in { animation: arrive 180ms ease-out; }
 body.overlay .text { font-size: var(--msg-size, 18px); }
 body.overlay .author { font-size: var(--name-size, 14px); }
+body.overlay .emote { height: 1.2em; vertical-align: -0.22em; }
+body.overlay[data-frame="portrait"] {
+  padding: 8px 10px 10px;
+}
+body.overlay[data-frame="portrait"] .log { gap: 4px; }
+body.overlay[data-frame="portrait"] .strip {
+  padding: 4px 8px 5px;
+  border-left-width: 2px;
+}
+body.overlay[data-frame="portrait"] .text {
+  font-size: calc(var(--msg-size, 18px) * 0.86);
+  line-height: 1.22;
+}
+body.overlay[data-frame="portrait"] .author {
+  font-size: calc(var(--name-size, 14px) * 0.9);
+}
+body.overlay[data-frame="portrait"] .meta { gap: 6px; }
 body.overlay .plat { font-size: calc(var(--name-size, 14px) - 2px); }
 body.overlay[data-show-platform="false"] .plat { display: none; }
 body.overlay[data-show-time="false"] time { display: none; }

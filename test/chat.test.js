@@ -167,6 +167,34 @@ test("youtube page gives the chat continuation and a stable login hash", () => {
   assert.equal(batch.messages[0].author, "Маша");
   assert.equal(batch.messages[0].text, "привет");
   assert.equal(batch.continuation, "next");
+  assert.ok(batch.timeout <= 900);
+  const emoji = readYouTubeActions({
+    continuationContents: {
+      liveChatContinuation: {
+        actions: [{
+          addChatItemAction: {
+            item: {
+              liveChatTextMessageRenderer: {
+                id: "m2",
+                authorName: { simpleText: "Алён4ик34" },
+                message: {
+                  runs: [
+                    { emoji: { shortcuts: [":rolling_on_the_floor_laughing:"], image: { thumbnails: [{ url: "https://fonts.gstatic.com/s/e/notoemoji/15.1/1f923/72.png" }] } } },
+                    { emoji: { emojiId: "😂" } },
+                    { emoji: { shortcuts: [":custom_cat:"], image: { thumbnails: [{ url: "https://yt3.ggpht.com/emoji/cat" }] } } },
+                  ],
+                },
+              },
+            },
+          },
+        }],
+        continuations: [{ timedContinuationData: { continuation: "n", timeoutMs: 8000 } }],
+      },
+    },
+  });
+  assert.equal(emoji.messages[0].text, "🤣😂\uFFFC");
+  assert.equal(emoji.messages[0].emotes[0].url, "https://yt3.ggpht.com/emoji/cat");
+  assert.equal(emoji.timeout, 900);
 });
 
 test("clearing the check removes only the fake messages", () => {

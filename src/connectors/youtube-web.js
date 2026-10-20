@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { shortcodeEmoji } from "../emoji-shortcodes.js";
+import { emoteUrlAllowed } from "../render.js";
 
 const WEB_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8";
 const AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -30,29 +32,99 @@ export function parseYouTubeLivePage(html, pageUrl = "") {
 }
 
 export function readYouTubeActions(json) {
-  const block = json?.continuationContents?.liveChatContinuation;
+  const block = json?.continuationContents?.liveChatContinuation || json?.contents?.liveChatContinuation;
   const messages = [];
-  for (const action of block?.actions || []) {
-    const item = action.addChatItemAction?.item;
-    const renderer = item?.liveChatTextMessageRenderer || item?.liveChatPaidMessageRenderer;
-    if (!renderer) continue;
-    const text = (renderer.message?.runs || []).map((run) => run.text || run.emoji?.shortcuts?.[0] || "").join("").trim();
-    if (!text) continue;
-    messages.push({
-      platform: "youtube",
-      platformMessageId: renderer.id || "",
-      author: renderer.authorName?.simpleText || "без ника",
-      authorId: renderer.authorExternalChannelId || "",
-      text,
-    });
-  }
+  for (const action of block?.actions || []) collectYouTubeAction(action, messages);
   const nextBlock = block?.continuations?.[0] || {};
-  const timed = nextBlock.timedContinuationData || nextBlock.invalidationContinuationData || {};
+  const timed = nextBlock.timedContinuationData || nextBlock.invalidationContinuationData || nextBlock.reloadContinuationData || {};
+  const asked = Number(timed.timeoutMs);
   return {
     messages,
     continuation: timed.continuation || "",
-    timeout: Number(timed.timeoutMs) || 5000,
+    timeout: Math.min(900, Math.max(350, Number.isFinite(asked) && asked > 0 ? asked : 700)),
   };
+}
+
+function collectYouTubeAction(action, messages) {
+  const nested = action?.replayChatItemAction?.actions;
+  if (Array.isArray(nested)) {
+    for (const child of nested) collectYouTubeAction(child, messages);
+    return;
+  }
+  const item = action?.addChatItemAction?.item;
+  const renderer = item?.liveChatTextMessageRenderer || item?.liveChatPaidMessageRenderer;
+  if (!renderer) return;
+  const parts = youtubeRuns(renderer.message?.runs);
+  if (!parts.text) return;
+  messages.push({
+    platform: "youtube",
+    platformMessageId: renderer.id || "",
+    author: renderer.authorName?.simpleText || "без ника",
+    authorId: renderer.authorExternalChannelId || "",
+    text: parts.text,
+    emotes: parts.emotes,
+  });
+}
+
+export function youtubeRuns(runs) {
+  let text = "";
+  const emotes = [];
+  for (const run of runs || []) {
+    if (typeof run?.text === "string") {
+      text += run.text;
+      continue;
+    }
+    const emoji = run?.emoji;
+    if (!emoji) continue;
+    const image = emojiImage(emoji);
+    const unicode = unicodeEmoji(emoji, image);
+    if (unicode) {
+      text += unicode;
+      continue;
+    }
+    if (image && emoteUrlAllowed(image)) {
+      const name = String(emoji.shortcuts?.[0] || emoji.searchTerms?.[0] || "emoji").replace(/:/g, "");
+      const start = text.length;
+      text += "\uFFFC";
+      emotes.push({ name, start, end: text.length, url: image });
+    }
+  }
+  const leading = text.length - text.trimStart().length;
+  const trimmed = text.trim();
+  return {
+    text: trimmed,
+    emotes: emotes
+      .map((emote) => ({ ...emote, start: emote.start - leading, end: emote.end - leading }))
+      .filter((emote) => emote.start >= 0 && emote.end <= trimmed.length),
+  };
+}
+
+function emojiImage(emoji) {
+  const thumbs = emoji.image?.thumbnails || [];
+  const best = [...thumbs].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
+  return best?.url || "";
+}
+
+function unicodeEmoji(emoji, image) {
+  const id = String(emoji.emojiId || "");
+  if (/^\p{Extended_Pictographic}/u.test(id) && [...id].length <= 4) return id;
+  const fromImage = codepointsFromUrl(image);
+  if (fromImage) return fromImage;
+  for (const shortcut of emoji.shortcuts || []) {
+    const hit = shortcodeEmoji(shortcut);
+    if (hit) return hit;
+  }
+  return "";
+}
+
+function codepointsFromUrl(url) {
+  const match = String(url).match(/notoemoji\/[^/]+\/([0-9a-f]+(?:_[0-9a-f]+)*)\//i);
+  if (!match) return "";
+  try {
+    return String.fromCodePoint(...match[1].split("_").map((hex) => Number.parseInt(hex, 16)));
+  } catch {
+    return "";
+  }
 }
 
 export async function runYouTubeSite({ cookies, channelId, handle, videoId, hub, setStatus, alive, session }) {
@@ -101,7 +173,7 @@ export async function runYouTubeSite({ cookies, channelId, handle, videoId, hub,
       }
       continuation = batch.continuation;
       session.continuation = continuation;
-      await sleep(Math.max(1000, batch.timeout));
+      await sleep(batch.timeout);
     }
   }
 }

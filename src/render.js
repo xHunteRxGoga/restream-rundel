@@ -3,6 +3,7 @@ const ALLOWED_HOST_SUFFIXES = [
   "kick.com",
   "kickcdn.com",
   "ggpht.com",
+  "gstatic.com",
   "ytimg.com",
   "googleusercontent.com",
   "vkvideo.ru",

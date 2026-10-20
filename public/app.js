@@ -15,6 +15,11 @@ let overlayLimit = 8;
 if (mode === "dock") buildLamps();
 
 const socket = connect();
+if (!preview) setInterval(() => { catchUp().catch(() => {}); }, 1000);
+if (mode === "overlay") {
+  fitFrame();
+  window.addEventListener("resize", fitFrame);
+}
 
 document.getElementById("check")?.addEventListener("click", async () => {
   await fetch("/api/test", { method: "POST" });
@@ -156,13 +161,39 @@ function fill(row, message) {
 }
 
 function trimOverlay() {
-  const visible = [...log.querySelectorAll(".strip")];
+  const strips = () => [...log.querySelectorAll(".strip")];
+  let visible = strips();
   while (visible.length > overlayLimit) {
-    const extra = visible.shift();
-    rows.delete([...rows.entries()].find(([, node]) => node === extra)?.[0]);
-    extra.remove();
+    dropStrip(visible[0]);
+    visible = strips();
+  }
+  if (log.clientHeight > 0) {
+    while (log.scrollHeight > log.clientHeight + 1 && strips().length > 1) {
+      dropStrip(strips()[0]);
+    }
   }
   fadeOverlay();
+}
+
+function dropStrip(node) {
+  const id = [...rows.entries()].find(([, item]) => item === node)?.[0];
+  if (id) rows.delete(id);
+  node.remove();
+}
+
+function fitFrame() {
+  const portrait = window.innerHeight > window.innerWidth;
+  document.body.dataset.frame = portrait ? "portrait" : "wide";
+  trimOverlay();
+}
+
+async function catchUp() {
+  const response = await fetch("/api/state");
+  if (!response.ok) return;
+  const state = await response.json();
+  for (const message of state.messages || []) {
+    if (!rows.has(message.id)) upsert(message);
+  }
 }
 
 function fadeOverlay() {

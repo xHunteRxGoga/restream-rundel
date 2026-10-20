@@ -56,7 +56,7 @@ server.listen(port, host, () => {
   console.log(`Все чаты: ${dock}`);
   console.log(`Экран:    http://${host}:${port}/overlay`);
   console.log(`Вход:     http://${host}:${port}/settings`);
-  console.log("сборка stream-links");
+  console.log("сборка live-chat");
   connectors.start();
   if (!process.env.NO_OPEN) {
     const config = store.get();
